@@ -6,11 +6,20 @@ const MAX_FFMPEG_DURATION_SECONDS = 10
 const MAX_FFMPEG_FRAMES = 240
 const MAX_FFMPEG_PIXELS = 1280 * 1280
 const MAX_FFMPEG_ASSET_BYTES = 24 * 1024 * 1024
+const MAX_FFMPEG_AUDIO_CLIPS = 2
 
 type FfmpegWorkerDone = { id: string; type: 'done'; output: ArrayBuffer; mimeType: string }
 type FfmpegWorkerProgress = { id: string; type: 'progress'; progress: number; status: string }
 type FfmpegWorkerError = { id: string; type: 'error'; message: string }
 type FfmpegWorkerMessage = FfmpegWorkerDone | FfmpegWorkerProgress | FfmpegWorkerError
+type FfmpegAudioInput = {
+  data: ArrayBuffer
+  duration: number
+  extension: string
+  start: number
+  trimStart: number
+  volume: number
+}
 
 export function getFfmpegSmallProjectBlocker(project: ProjectJson, settings: ExportSettings) {
   const { width, height } = resolveOutputSize(project, settings)
@@ -21,7 +30,7 @@ export function getFfmpegSmallProjectBlocker(project: ProjectJson, settings: Exp
   const totalAssetBytes = project.assets.reduce((total, asset) => total + asset.size, 0)
 
   if (!visualClips.length) return 'Adicione pelo menos um clipe visual para exportar com FFmpeg.'
-  if (audioClips.length) return 'FFmpeg.wasm nesta fase exporta video visual; projetos com audio usam o fallback atual.'
+  if (audioClips.length > MAX_FFMPEG_AUDIO_CLIPS) return `FFmpeg.wasm nesta fase aceita ate ${MAX_FFMPEG_AUDIO_CLIPS} faixa(s) de audio.`
   if (duration > MAX_FFMPEG_DURATION_SECONDS) return `FFmpeg.wasm nesta fase aceita ate ${MAX_FFMPEG_DURATION_SECONDS}s.`
   if (Math.ceil(duration * fps) > MAX_FFMPEG_FRAMES) return `Projeto passou de ${MAX_FFMPEG_FRAMES} frames para FFmpeg.wasm.`
   if (width * height > MAX_FFMPEG_PIXELS) return 'Use 720p/original pequeno para render FFmpeg.wasm nesta fase.'
@@ -61,7 +70,8 @@ export async function renderProjectWithFfmpegWorker(
   }
 
   onProgress(52, 'Iniciando worker FFmpeg')
-  const result = await encodeFramesInWorker({ fps, frames, width, height, quality: qualityToQscale(settings.quality) }, onProgress)
+  const audioInputs = await collectAudioInputs(project)
+  const result = await encodeFramesInWorker({ audioInputs, fps, frames, width, height, quality: qualityToQscale(settings.quality) }, onProgress)
   return {
     blob: new Blob([result.output], { type: result.mimeType }),
     fileName: `${project.title.replace(/[^\w-]+/g, '-').toLowerCase() || 'videolab-export'}-ffmpeg.mp4`,
@@ -74,6 +84,34 @@ function qualityToQscale(quality: ExportSettings['quality']) {
   if (quality === 'alta') return 4
   if (quality === 'boa') return 6
   return 9
+}
+
+async function collectAudioInputs(project: ProjectJson): Promise<FfmpegAudioInput[]> {
+  const audioClips = project.clips
+    .filter((clip) => clip.type === 'audio' && clip.assetId)
+    .slice(0, MAX_FFMPEG_AUDIO_CLIPS)
+
+  return Promise.all(audioClips.map(async (clip) => {
+    const asset = project.assets.find((item) => item.id === clip.assetId)
+    if (!asset?.src) throw new Error('Audio nao encontrado para exportacao FFmpeg.')
+    const response = await fetch(asset.src)
+    if (!response.ok) throw new Error('Nao foi possivel carregar audio para FFmpeg.')
+    return {
+      data: await response.arrayBuffer(),
+      duration: Math.min(clip.duration, Math.max(0.1, project.duration - clip.start)),
+      extension: extensionFromMime(asset.mimeType),
+      start: clip.start,
+      trimStart: clip.trimStart,
+      volume: clip.volume,
+    }
+  }))
+}
+
+function extensionFromMime(mimeType: string) {
+  if (mimeType.includes('mpeg') || mimeType.includes('mp3')) return 'mp3'
+  if (mimeType.includes('ogg')) return 'ogg'
+  if (mimeType.includes('mp4') || mimeType.includes('m4a') || mimeType.includes('aac')) return 'm4a'
+  return 'wav'
 }
 
 async function seekActiveVideos(project: ProjectJson, mediaCache: BrowserMediaCache, time: number) {
@@ -110,7 +148,7 @@ function canvasToPngBuffer(canvas: HTMLCanvasElement): Promise<ArrayBuffer> {
 }
 
 function encodeFramesInWorker(
-  input: { fps: number; frames: ArrayBuffer[]; width: number; height: number; quality: number },
+  input: { audioInputs: FfmpegAudioInput[]; fps: number; frames: ArrayBuffer[]; width: number; height: number; quality: number },
   onProgress: (progress: number, status: string) => void,
 ) {
   const id = crypto.randomUUID()
@@ -132,7 +170,7 @@ function encodeFramesInWorker(
       worker.terminate()
       reject(new Error(event.message || 'Worker FFmpeg falhou.'))
     }
-    worker.postMessage({ id, ...input }, input.frames)
+    worker.postMessage({ id, ...input }, [...input.frames, ...input.audioInputs.map((audio) => audio.data)])
   })
 }
 
