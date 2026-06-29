@@ -23,30 +23,213 @@
         "description": "Fontes livres variadas para titulos cinematicos, legendas, tech, manuscritos e thumbnails.",
         "cover": "cover.jpg",
         "preview": "preview.mp4",
-        "compatibility": { "editor_min_version": "1.0.0" },
+        "compatibility": {
+          "editor_min_version": "1.0.0"
+        },
         "items": [
-          { "id": "font_bebas_neue", "type": "font", "name": "Bebas Neue", "file": "fonts/bebas-neue.json", "payload": { "family": "Bebas Neue", "style": "display", "source": "google-fonts" } },
-          { "id": "font_oswald", "type": "font", "name": "Oswald", "file": "fonts/oswald.json", "payload": { "family": "Oswald", "style": "title", "source": "google-fonts" } },
-          { "id": "font_montserrat", "type": "font", "name": "Montserrat", "file": "fonts/montserrat.json", "payload": { "family": "Montserrat", "style": "clean", "source": "google-fonts" } },
-          { "id": "font_poppins", "type": "font", "name": "Poppins", "file": "fonts/poppins.json", "payload": { "family": "Poppins", "style": "modern", "source": "google-fonts" } },
-          { "id": "font_inter", "type": "font", "name": "Inter", "file": "fonts/inter.json", "payload": { "family": "Inter", "style": "ui", "source": "google-fonts" } },
-          { "id": "font_anton", "type": "font", "name": "Anton", "file": "fonts/anton.json", "payload": { "family": "Anton", "style": "impact", "source": "google-fonts" } },
-          { "id": "font_rubik", "type": "font", "name": "Rubik", "file": "fonts/rubik.json", "payload": { "family": "Rubik", "style": "rounded", "source": "google-fonts" } },
-          { "id": "font_rajdhani", "type": "font", "name": "Rajdhani", "file": "fonts/rajdhani.json", "payload": { "family": "Rajdhani", "style": "tech", "source": "google-fonts" } },
-          { "id": "font_orbitron", "type": "font", "name": "Orbitron", "file": "fonts/orbitron.json", "payload": { "family": "Orbitron", "style": "sci-fi", "source": "google-fonts" } },
-          { "id": "font_audiowide", "type": "font", "name": "Audiowide", "file": "fonts/audiowide.json", "payload": { "family": "Audiowide", "style": "retro-tech", "source": "google-fonts" } },
-          { "id": "font_barlow_condensed", "type": "font", "name": "Barlow Condensed", "file": "fonts/barlow-condensed.json", "payload": { "family": "Barlow Condensed", "style": "editorial", "source": "google-fonts" } },
-          { "id": "font_playfair_display", "type": "font", "name": "Playfair Display", "file": "fonts/playfair-display.json", "payload": { "family": "Playfair Display", "style": "elegant", "source": "google-fonts" } },
-          { "id": "font_cinzel", "type": "font", "name": "Cinzel", "file": "fonts/cinzel.json", "payload": { "family": "Cinzel", "style": "cinematic", "source": "google-fonts" } },
-          { "id": "font_lobster", "type": "font", "name": "Lobster", "file": "fonts/lobster.json", "payload": { "family": "Lobster", "style": "script", "source": "google-fonts" } },
-          { "id": "font_permanent_marker", "type": "font", "name": "Permanent Marker", "file": "fonts/permanent-marker.json", "payload": { "family": "Permanent Marker", "style": "marker", "source": "google-fonts" } },
-          { "id": "font_bangers", "type": "font", "name": "Bangers", "file": "fonts/bangers.json", "payload": { "family": "Bangers", "style": "comic", "source": "google-fonts" } },
-          { "id": "font_caveat", "type": "font", "name": "Caveat", "file": "fonts/caveat.json", "payload": { "family": "Caveat", "style": "handwritten", "source": "google-fonts" } },
-          { "id": "font_fira_code", "type": "font", "name": "Fira Code", "file": "fonts/fira-code.json", "payload": { "family": "Fira Code", "style": "mono", "source": "google-fonts" } }
+          {
+            "id": "font_bebas_neue",
+            "type": "font",
+            "name": "Bebas Neue",
+            "file": "fonts/bebas-neue.json",
+            "payload": {
+              "family": "Bebas Neue",
+              "style": "display",
+              "source": "google-fonts"
+            }
+          },
+          {
+            "id": "font_oswald",
+            "type": "font",
+            "name": "Oswald",
+            "file": "fonts/oswald.json",
+            "payload": {
+              "family": "Oswald",
+              "style": "title",
+              "source": "google-fonts"
+            }
+          },
+          {
+            "id": "font_montserrat",
+            "type": "font",
+            "name": "Montserrat",
+            "file": "fonts/montserrat.json",
+            "payload": {
+              "family": "Montserrat",
+              "style": "clean",
+              "source": "google-fonts"
+            }
+          },
+          {
+            "id": "font_poppins",
+            "type": "font",
+            "name": "Poppins",
+            "file": "fonts/poppins.json",
+            "payload": {
+              "family": "Poppins",
+              "style": "modern",
+              "source": "google-fonts"
+            }
+          },
+          {
+            "id": "font_inter",
+            "type": "font",
+            "name": "Inter",
+            "file": "fonts/inter.json",
+            "payload": {
+              "family": "Inter",
+              "style": "ui",
+              "source": "google-fonts"
+            }
+          },
+          {
+            "id": "font_anton",
+            "type": "font",
+            "name": "Anton",
+            "file": "fonts/anton.json",
+            "payload": {
+              "family": "Anton",
+              "style": "impact",
+              "source": "google-fonts"
+            }
+          },
+          {
+            "id": "font_rubik",
+            "type": "font",
+            "name": "Rubik",
+            "file": "fonts/rubik.json",
+            "payload": {
+              "family": "Rubik",
+              "style": "rounded",
+              "source": "google-fonts"
+            }
+          },
+          {
+            "id": "font_rajdhani",
+            "type": "font",
+            "name": "Rajdhani",
+            "file": "fonts/rajdhani.json",
+            "payload": {
+              "family": "Rajdhani",
+              "style": "tech",
+              "source": "google-fonts"
+            }
+          },
+          {
+            "id": "font_orbitron",
+            "type": "font",
+            "name": "Orbitron",
+            "file": "fonts/orbitron.json",
+            "payload": {
+              "family": "Orbitron",
+              "style": "sci-fi",
+              "source": "google-fonts"
+            }
+          },
+          {
+            "id": "font_audiowide",
+            "type": "font",
+            "name": "Audiowide",
+            "file": "fonts/audiowide.json",
+            "payload": {
+              "family": "Audiowide",
+              "style": "retro-tech",
+              "source": "google-fonts"
+            }
+          },
+          {
+            "id": "font_barlow_condensed",
+            "type": "font",
+            "name": "Barlow Condensed",
+            "file": "fonts/barlow-condensed.json",
+            "payload": {
+              "family": "Barlow Condensed",
+              "style": "editorial",
+              "source": "google-fonts"
+            }
+          },
+          {
+            "id": "font_playfair_display",
+            "type": "font",
+            "name": "Playfair Display",
+            "file": "fonts/playfair-display.json",
+            "payload": {
+              "family": "Playfair Display",
+              "style": "elegant",
+              "source": "google-fonts"
+            }
+          },
+          {
+            "id": "font_cinzel",
+            "type": "font",
+            "name": "Cinzel",
+            "file": "fonts/cinzel.json",
+            "payload": {
+              "family": "Cinzel",
+              "style": "cinematic",
+              "source": "google-fonts"
+            }
+          },
+          {
+            "id": "font_lobster",
+            "type": "font",
+            "name": "Lobster",
+            "file": "fonts/lobster.json",
+            "payload": {
+              "family": "Lobster",
+              "style": "script",
+              "source": "google-fonts"
+            }
+          },
+          {
+            "id": "font_permanent_marker",
+            "type": "font",
+            "name": "Permanent Marker",
+            "file": "fonts/permanent-marker.json",
+            "payload": {
+              "family": "Permanent Marker",
+              "style": "marker",
+              "source": "google-fonts"
+            }
+          },
+          {
+            "id": "font_bangers",
+            "type": "font",
+            "name": "Bangers",
+            "file": "fonts/bangers.json",
+            "payload": {
+              "family": "Bangers",
+              "style": "comic",
+              "source": "google-fonts"
+            }
+          },
+          {
+            "id": "font_caveat",
+            "type": "font",
+            "name": "Caveat",
+            "file": "fonts/caveat.json",
+            "payload": {
+              "family": "Caveat",
+              "style": "handwritten",
+              "source": "google-fonts"
+            }
+          },
+          {
+            "id": "font_fira_code",
+            "type": "font",
+            "name": "Fira Code",
+            "file": "fonts/fira-code.json",
+            "payload": {
+              "family": "Fira Code",
+              "style": "mono",
+              "source": "google-fonts"
+            }
+          }
         ],
         "license": "free-personal-use",
         "author": "VideoLab + fontes OFL"
-      }
+      },
+      "packageUrl": "https://raw.githubusercontent.com/everton191/editor-de-video/main/public/packs/releases/pack-fonts-studio-001.zip"
     },
     {
       "id": "pack_creator_effects_001",
@@ -67,17 +250,45 @@
         "description": "Presets visuais para videos pessoais: neon, filme, vintage, glitch, clean e noite.",
         "cover": "cover.jpg",
         "preview": "preview.mp4",
-        "compatibility": { "editor_min_version": "1.0.0" },
+        "compatibility": {
+          "editor_min_version": "1.0.0"
+        },
         "items": [
-          { "id": "effect_neon_pop", "type": "effect", "name": "Neon Pop", "file": "effects/neon-pop.json" },
-          { "id": "effect_vintage_fade", "type": "effect", "name": "Vintage Fade", "file": "effects/vintage-fade.json" },
-          { "id": "effect_glitch_soft", "type": "effect", "name": "Glitch Soft", "file": "effects/glitch-soft.json" },
-          { "id": "effect_clean_boost", "type": "effect", "name": "Clean Boost", "file": "effects/clean-boost.json" },
-          { "id": "effect_night_blue", "type": "effect", "name": "Night Blue", "file": "effects/night-blue.json" }
+          {
+            "id": "effect_neon_pop",
+            "type": "effect",
+            "name": "Neon Pop",
+            "file": "effects/neon-pop.json"
+          },
+          {
+            "id": "effect_vintage_fade",
+            "type": "effect",
+            "name": "Vintage Fade",
+            "file": "effects/vintage-fade.json"
+          },
+          {
+            "id": "effect_glitch_soft",
+            "type": "effect",
+            "name": "Glitch Soft",
+            "file": "effects/glitch-soft.json"
+          },
+          {
+            "id": "effect_clean_boost",
+            "type": "effect",
+            "name": "Clean Boost",
+            "file": "effects/clean-boost.json"
+          },
+          {
+            "id": "effect_night_blue",
+            "type": "effect",
+            "name": "Night Blue",
+            "file": "effects/night-blue.json"
+          }
         ],
         "license": "free-personal-use",
         "author": "VideoLab"
-      }
+      },
+      "packageUrl": "https://raw.githubusercontent.com/everton191/editor-de-video/main/public/packs/releases/pack-creator-effects-001.zip"
     },
     {
       "id": "pack_animated_texts_001",
@@ -98,17 +309,45 @@
         "description": "Estilos de texto para abertura, legenda, credito, lower third, sticker e destaque.",
         "cover": "cover.jpg",
         "preview": "preview.mp4",
-        "compatibility": { "editor_min_version": "1.0.0" },
+        "compatibility": {
+          "editor_min_version": "1.0.0"
+        },
         "items": [
-          { "id": "text_kinetic_title", "type": "text_preset", "name": "Titulo Kinetic", "file": "texts/kinetic-title.json" },
-          { "id": "text_glitch_title", "type": "text_preset", "name": "Titulo Glitch", "file": "texts/glitch-title.json" },
-          { "id": "text_subtitle_clean", "type": "text_preset", "name": "Legenda Clean", "file": "texts/subtitle-clean.json" },
-          { "id": "text_lower_third", "type": "text_preset", "name": "Lower Third", "file": "texts/lower-third.json" },
-          { "id": "text_credit_roll", "type": "text_preset", "name": "Creditos", "file": "texts/credit-roll.json" }
+          {
+            "id": "text_kinetic_title",
+            "type": "text_preset",
+            "name": "Titulo Kinetic",
+            "file": "texts/kinetic-title.json"
+          },
+          {
+            "id": "text_glitch_title",
+            "type": "text_preset",
+            "name": "Titulo Glitch",
+            "file": "texts/glitch-title.json"
+          },
+          {
+            "id": "text_subtitle_clean",
+            "type": "text_preset",
+            "name": "Legenda Clean",
+            "file": "texts/subtitle-clean.json"
+          },
+          {
+            "id": "text_lower_third",
+            "type": "text_preset",
+            "name": "Lower Third",
+            "file": "texts/lower-third.json"
+          },
+          {
+            "id": "text_credit_roll",
+            "type": "text_preset",
+            "name": "Creditos",
+            "file": "texts/credit-roll.json"
+          }
         ],
         "license": "free-personal-use",
         "author": "VideoLab"
-      }
+      },
+      "packageUrl": "https://raw.githubusercontent.com/everton191/editor-de-video/main/public/packs/releases/pack-animated-texts-001.zip"
     },
     {
       "id": "pack_transition_lab_001",
@@ -129,17 +368,45 @@
         "description": "Transicoes variadas: blur, light leak, whip, flash, shape wipe e zoom.",
         "cover": "cover.jpg",
         "preview": "preview.mp4",
-        "compatibility": { "editor_min_version": "1.0.0" },
+        "compatibility": {
+          "editor_min_version": "1.0.0"
+        },
         "items": [
-          { "id": "transition_whip_pan", "type": "transition", "name": "Whip Pan", "file": "transitions/whip-pan.json" },
-          { "id": "transition_flash_white", "type": "transition", "name": "Flash Branco", "file": "transitions/flash-white.json" },
-          { "id": "transition_zoom_snap", "type": "transition", "name": "Zoom Snap", "file": "transitions/zoom-snap.json" },
-          { "id": "transition_shape_wipe", "type": "transition", "name": "Shape Wipe", "file": "transitions/shape-wipe.json" },
-          { "id": "transition_light_leak", "type": "transition", "name": "Light Leak", "file": "transitions/light-leak.json" }
+          {
+            "id": "transition_whip_pan",
+            "type": "transition",
+            "name": "Whip Pan",
+            "file": "transitions/whip-pan.json"
+          },
+          {
+            "id": "transition_flash_white",
+            "type": "transition",
+            "name": "Flash Branco",
+            "file": "transitions/flash-white.json"
+          },
+          {
+            "id": "transition_zoom_snap",
+            "type": "transition",
+            "name": "Zoom Snap",
+            "file": "transitions/zoom-snap.json"
+          },
+          {
+            "id": "transition_shape_wipe",
+            "type": "transition",
+            "name": "Shape Wipe",
+            "file": "transitions/shape-wipe.json"
+          },
+          {
+            "id": "transition_light_leak",
+            "type": "transition",
+            "name": "Light Leak",
+            "file": "transitions/light-leak.json"
+          }
         ],
         "license": "free-personal-use",
         "author": "VideoLab"
-      }
+      },
+      "packageUrl": "https://raw.githubusercontent.com/everton191/editor-de-video/main/public/packs/releases/pack-transition-lab-001.zip"
     }
   ]
 }
