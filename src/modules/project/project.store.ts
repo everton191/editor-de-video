@@ -54,11 +54,15 @@ interface EditorState {
   splitSelectedClip: () => void
   deleteSelectedClip: () => void
   duplicateSelectedClip: () => void
+  setTimelineZoom: (zoom: number) => void
+  exportCaptionsSrt: () => void
+  importCaptionsSrt: (file: File) => Promise<void>
   setCurrentTime: (time: number) => void
   togglePlayback: () => void
   installPack: (id: string) => Promise<void>
   removePack: (id: string) => Promise<void>
   updateExportSettings: (patch: Partial<ExportSettings>) => void
+  cancelRender: () => void
   renderCurrentProject: () => Promise<void>
   getExportPlan: () => ReturnType<typeof buildFfmpegPlan> | undefined
 }
@@ -74,6 +78,8 @@ const defaultExportSettings: ExportSettings = {
   improveContrast: false,
   improveSaturation: false,
 }
+
+let activeRenderCancelToken: { cancelled: boolean } | undefined
 
 const defaultTextStyle: TextStyle = {
   fontFamily: 'Inter, Arial, sans-serif',
@@ -107,6 +113,38 @@ function toProjectRecord(project: ProjectJson): ProjectRecord {
 function mutateProject(project: ProjectJson | undefined, mutator: (project: ProjectJson) => ProjectJson) {
   if (!project) return project
   return touchProject(mutator(project))
+}
+
+function formatSrtTime(seconds: number) {
+  const safeSeconds = Math.max(0, seconds)
+  const hours = Math.floor(safeSeconds / 3600)
+  const minutes = Math.floor((safeSeconds % 3600) / 60)
+  const secs = Math.floor(safeSeconds % 60)
+  const millis = Math.round((safeSeconds % 1) * 1000)
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')},${String(millis).padStart(3, '0')}`
+}
+
+function parseSrt(input: string) {
+  const timeToSeconds = (value: string) => {
+    const match = value.match(/(\d+):(\d+):(\d+),(\d+)/)
+    if (!match) return 0
+    return Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]) + Number(match[4]) / 1000
+  }
+  return input
+    .replace(/\r/g, '')
+    .split(/\n\n+/)
+    .map((block) => {
+      const lines = block.split('\n').filter(Boolean)
+      const timeLine = lines.find((line) => line.includes('-->'))
+      if (!timeLine) return undefined
+      const [startText, endText] = timeLine.split('-->').map((item) => item.trim())
+      const start = timeToSeconds(startText)
+      const end = timeToSeconds(endText)
+      const text = lines.slice(lines.indexOf(timeLine) + 1).join('\n').trim()
+      if (!text || end <= start) return undefined
+      return { start, duration: end - start, text }
+    })
+    .filter((item): item is { start: number; duration: number; text: string } => Boolean(item))
 }
 
 async function hydrateProjectAssets(project: ProjectJson): Promise<ProjectJson> {
@@ -469,6 +507,53 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       saveStatus: 'alterado',
     }))
   },
+  setTimelineZoom: (zoom) => set((state) => ({
+    currentProject: mutateProject(state.currentProject, (project) => ({
+      ...project,
+      globalSettings: { ...project.globalSettings, timelineZoom: Math.min(4, Math.max(0.4, zoom)) },
+    })),
+    saveStatus: 'alterado',
+  })),
+
+  exportCaptionsSrt: () => {
+    const project = get().currentProject
+    if (!project) return
+    const content = project.captions.map((caption, index) => `${index + 1}\n${formatSrtTime(caption.start)} --> ${formatSrtTime(caption.start + caption.duration)}\n${caption.text}\n`).join('\n')
+    const url = URL.createObjectURL(new Blob([content || ''], { type: 'text/plain;charset=utf-8' }))
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `${project.title.replace(/[^\w-]+/g, '-').toLowerCase() || 'legendas'}.srt`
+    anchor.click()
+    URL.revokeObjectURL(url)
+  },
+
+  importCaptionsSrt: async (file) => {
+    const text = await file.text()
+    const captions = parseSrt(text)
+    if (!captions.length) {
+      set({ lastError: 'Nenhuma legenda valida encontrada no SRT.' })
+      return
+    }
+    set((state) => ({
+      currentProject: mutateProject(state.currentProject, (project) => ({
+        ...project,
+        captions: [
+          ...project.captions,
+          ...captions.map((caption) => ({
+            id: crypto.randomUUID(),
+            type: 'caption' as const,
+            trackId: 'track_caption_1',
+            start: caption.start,
+            duration: caption.duration,
+            text: caption.text,
+            style: { fontFamily: 'Arial', fontSize: 42, fontWeight: '700', color: '#FFFFFF', backgroundColor: 'rgba(0,0,0,0.6)', align: 'center' as const, position: 'bottom' as const },
+          })),
+        ],
+      })),
+      lastError: undefined,
+      saveStatus: 'alterado',
+    }))
+  },
 
   setCurrentTime: (time) => set({ currentTime: Math.max(0, time) }),
   togglePlayback: () => set((state) => ({ isPlaying: !state.isPlaying })),
@@ -493,17 +578,27 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     await get().refreshInstalledPacks()
   },
   updateExportSettings: (patch) => set((state) => ({ exportSettings: { ...state.exportSettings, ...patch } })),
+  cancelRender: () => {
+    if (activeRenderCancelToken) activeRenderCancelToken.cancelled = true
+    set({ isRendering: false, renderStatus: 'Exportacao cancelada', renderProgress: 0 })
+  },
   renderCurrentProject: async () => {
     const project = get().currentProject
     if (!project) return
+    const cancelToken = { cancelled: false }
+    activeRenderCancelToken = cancelToken
     set({ isRendering: true, renderProgress: 0, renderStatus: 'Preparando exportacao', lastError: undefined })
     try {
       const result = await renderProjectWithFfmpegWorker(project, get().exportSettings, (progress, status) => {
         set({ renderProgress: progress, renderStatus: status })
-      })
+      }, () => cancelToken.cancelled)
       downloadRenderResult(result)
       set({ isRendering: false, renderProgress: 100, renderStatus: `Arquivo gerado: ${result.fileName}` })
     } catch (error) {
+      if (cancelToken.cancelled) {
+        set({ isRendering: false, renderProgress: 0, renderStatus: 'Exportacao cancelada' })
+        return
+      }
       try {
         set({ renderStatus: 'FFmpeg indisponivel para este projeto. Usando fallback do navegador.' })
         const result = await renderProjectInBrowser(project, get().exportSettings, (progress, status) => {

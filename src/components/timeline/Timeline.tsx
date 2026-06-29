@@ -4,7 +4,7 @@ import { formatTime } from '../../utils/time'
 import { Button } from '../ui/Button'
 
 export function Timeline() {
-  const { currentProject, currentTime, selectedClipId, selectClip, setCurrentTime, updateClip, splitSelectedClip, duplicateSelectedClip, deleteSelectedClip } = useEditorStore()
+  const { currentProject, currentTime, selectedClipId, selectClip, setCurrentTime, setTimelineZoom, updateClip, splitSelectedClip, duplicateSelectedClip, deleteSelectedClip } = useEditorStore()
   if (!currentProject) return null
   const pixelsPerSecond = 84 * currentProject.globalSettings.timelineZoom
   const width = Math.max(720, currentProject.duration * pixelsPerSecond + 160)
@@ -17,8 +17,8 @@ export function Timeline() {
           <Button variant="ghost" icon={<Scissors size={18} />} onClick={splitSelectedClip}>Dividir</Button>
           <Button variant="ghost" icon={<Copy size={18} />} onClick={duplicateSelectedClip}>Duplicar</Button>
           <Button variant="danger" icon={<Trash2 size={18} />} onClick={deleteSelectedClip}>Excluir</Button>
-          <Button variant="ghost" icon={<ZoomOut size={18} />} aria-label="Menos zoom" />
-          <Button variant="ghost" icon={<ZoomIn size={18} />} aria-label="Mais zoom" />
+          <Button variant="ghost" icon={<ZoomOut size={18} />} aria-label="Menos zoom" onClick={() => setTimelineZoom(currentProject.globalSettings.timelineZoom - 0.2)} />
+          <Button variant="ghost" icon={<ZoomIn size={18} />} aria-label="Mais zoom" onClick={() => setTimelineZoom(currentProject.globalSettings.timelineZoom + 0.2)} />
         </div>
       </div>
       <div className="timeline-scroll">
@@ -50,8 +50,34 @@ export function Timeline() {
                       updateClip(clip.id, { start: Math.max(0, (event.clientX - parent.left - 120) / pixelsPerSecond) })
                     }}
                   >
+                    <span
+                      className="timeline-clip__handle timeline-clip__handle--left"
+                      onClick={(event) => event.stopPropagation()}
+                      onPointerDown={(event) => {
+                        event.currentTarget.setPointerCapture(event.pointerId)
+                      }}
+                      onPointerMove={(event) => {
+                        if (!(event.buttons & 1)) return
+                        const delta = event.movementX / pixelsPerSecond
+                        const nextStart = Math.max(0, Math.min(clip.start + clip.duration - 0.3, clip.start + delta))
+                        const deltaStart = nextStart - clip.start
+                        updateClip(clip.id, { start: nextStart, duration: Math.max(0.3, clip.duration - deltaStart), trimStart: Math.max(0, clip.trimStart + deltaStart) })
+                      }}
+                    />
                     <span>{clip.text || asset?.name || clip.type}</span>
                     <small>{clip.duration.toFixed(1)}s</small>
+                    <span
+                      className="timeline-clip__handle timeline-clip__handle--right"
+                      onClick={(event) => event.stopPropagation()}
+                      onPointerDown={(event) => {
+                        event.currentTarget.setPointerCapture(event.pointerId)
+                      }}
+                      onPointerMove={(event) => {
+                        if (!(event.buttons & 1)) return
+                        const duration = Math.max(0.3, clip.duration + event.movementX / pixelsPerSecond)
+                        updateClip(clip.id, { duration, trimEnd: clip.trimStart + duration })
+                      }}
+                    />
                   </button>
                 )
               })}

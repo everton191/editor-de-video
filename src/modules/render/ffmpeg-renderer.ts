@@ -16,6 +16,8 @@ type FfmpegAudioInput = {
   data: ArrayBuffer
   duration: number
   extension: string
+  fadeIn: number
+  fadeOut: number
   start: number
   trimStart: number
   volume: number
@@ -42,6 +44,7 @@ export async function renderProjectWithFfmpegWorker(
   project: ProjectJson,
   settings: ExportSettings,
   onProgress: (progress: number, status: string) => void,
+  shouldCancel = () => false,
 ): Promise<BrowserRenderResult> {
   const blocker = getFfmpegSmallProjectBlocker(project, settings)
   if (blocker) throw new Error(blocker)
@@ -61,6 +64,7 @@ export async function renderProjectWithFfmpegWorker(
   const frames: ArrayBuffer[] = []
 
   for (let frame = 0; frame < frameCount; frame += 1) {
+    if (shouldCancel()) throw new Error('Exportacao cancelada.')
     const time = frame / fps
     await seekActiveVideos(project, mediaCache, time)
     drawFrame(context, project, mediaCache, time, width, height, settings)
@@ -71,7 +75,7 @@ export async function renderProjectWithFfmpegWorker(
 
   onProgress(52, 'Iniciando worker FFmpeg')
   const audioInputs = await collectAudioInputs(project)
-  const result = await encodeFramesInWorker({ audioInputs, fps, frames, width, height, quality: qualityToQscale(settings.quality) }, onProgress)
+  const result = await encodeFramesInWorker({ audioInputs, fps, frames, width, height, quality: qualityToQscale(settings.quality) }, onProgress, shouldCancel)
   return {
     blob: new Blob([result.output], { type: result.mimeType }),
     fileName: `${project.title.replace(/[^\w-]+/g, '-').toLowerCase() || 'videolab-export'}-ffmpeg.mp4`,
@@ -100,6 +104,8 @@ async function collectAudioInputs(project: ProjectJson): Promise<FfmpegAudioInpu
       data: await response.arrayBuffer(),
       duration: Math.min(clip.duration, Math.max(0.1, project.duration - clip.start)),
       extension: extensionFromMime(asset.mimeType),
+      fadeIn: Number(clip.metadata.fadeIn || 0),
+      fadeOut: Number(clip.metadata.fadeOut || 0),
       start: clip.start,
       trimStart: clip.trimStart,
       volume: clip.volume,
@@ -150,12 +156,18 @@ function canvasToPngBuffer(canvas: HTMLCanvasElement): Promise<ArrayBuffer> {
 function encodeFramesInWorker(
   input: { audioInputs: FfmpegAudioInput[]; fps: number; frames: ArrayBuffer[]; width: number; height: number; quality: number },
   onProgress: (progress: number, status: string) => void,
+  shouldCancel: () => boolean,
 ) {
   const id = crypto.randomUUID()
   const worker = new Worker(new URL('./ffmpeg-render.worker.ts', import.meta.url), { type: 'module' })
   return new Promise<FfmpegWorkerDone>((resolve, reject) => {
     worker.onmessage = ({ data }: MessageEvent<FfmpegWorkerMessage>) => {
       if (data.id !== id) return
+      if (shouldCancel()) {
+        worker.terminate()
+        reject(new Error('Exportacao cancelada.'))
+        return
+      }
       if (data.type === 'progress') onProgress(data.progress, data.status)
       if (data.type === 'error') {
         worker.terminate()

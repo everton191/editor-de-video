@@ -10,6 +10,8 @@ type WorkerRequest = {
     extension: string
     start: number
     trimStart: number
+    fadeIn: number
+    fadeOut: number
     volume: number
   }>
   fps: number
@@ -109,7 +111,14 @@ function buildAudioFilter(audioInputs: WorkerRequest['audioInputs']) {
     const delayMs = Math.max(0, Math.round(input.start * 1000))
     const duration = Math.max(0.1, input.duration)
     const trimStart = Math.max(0, input.trimStart)
-    return `[${index + 1}:a]atrim=start=${trimStart}:duration=${duration},asetpts=PTS-STARTPTS,adelay=${delayMs}|${delayMs},volume=${input.volume}[a${index}]`
+    const fadeIn = Math.max(0, Math.min(input.fadeIn, duration))
+    const fadeOut = Math.max(0, Math.min(input.fadeOut, duration))
+    const fadeOutStart = Math.max(0, duration - fadeOut)
+    const fades = [
+      fadeIn > 0 ? `afade=t=in:st=0:d=${fadeIn}` : '',
+      fadeOut > 0 ? `afade=t=out:st=${fadeOutStart}:d=${fadeOut}` : '',
+    ].filter(Boolean).join(',')
+    return `[${index + 1}:a]atrim=start=${trimStart}:duration=${duration},asetpts=PTS-STARTPTS,adelay=${delayMs}|${delayMs},volume=${input.volume}${fades ? `,${fades}` : ''}[a${index}]`
   })
   if (audioInputs.length === 1) {
     return { filter: chains[0], output: '[a0]' }

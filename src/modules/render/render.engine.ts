@@ -26,8 +26,9 @@ export function buildFfmpegPlan(project: ProjectJson, settings: ExportSettings) 
   if (settings.improveContrast || settings.improveSaturation) filters.push('eq=contrast=1.05:saturation=1.08')
   return {
     mode: blocker ? 'fallback-browser-recorder' : 'ffmpeg-wasm-worker',
-    note: blocker || 'Renderizacao real via FFmpeg.wasm em worker para projeto pequeno.',
+    note: blocker || 'Renderizacao real via FFmpeg.wasm em worker para projeto pequeno, com video e audio local limitado.',
     inputCount: project.assets.length,
+    audioTracks: project.clips.filter((clip) => clip.type === 'audio').length,
     filters,
   }
 }

@@ -19,6 +19,24 @@ export function PropertiesPanel() {
       <Field label="Opacidade"><input className="slider" max="1" min="0" step="0.01" type="range" value={clip.opacity} onChange={(event) => updateClip(clip.id, { opacity: Number(event.target.value) })} /></Field>
       <Field label="Duracao"><TextInput type="number" min="0.2" step="0.1" value={clip.duration} onChange={(event) => updateClip(clip.id, { duration: Number(event.target.value), trimEnd: Number(event.target.value) })} /></Field>
       {clip.type === 'audio' || clip.type === 'video' ? <Field label="Volume"><input className="slider" max="1" min="0" step="0.01" type="range" value={clip.volume} onChange={(event) => updateClip(clip.id, { volume: Number(event.target.value) })} /></Field> : null}
+      {clip.type === 'audio' ? (
+        <div className="property-grid">
+          <Field label="Fade in"><TextInput type="number" min="0" max={clip.duration} step="0.1" value={Number(clip.metadata.fadeIn || 0)} onChange={(event) => updateClip(clip.id, { metadata: { ...clip.metadata, fadeIn: Number(event.target.value) } })} /></Field>
+          <Field label="Fade out"><TextInput type="number" min="0" max={clip.duration} step="0.1" value={Number(clip.metadata.fadeOut || 0)} onChange={(event) => updateClip(clip.id, { metadata: { ...clip.metadata, fadeOut: Number(event.target.value) } })} /></Field>
+        </div>
+      ) : null}
+      {clip.effects.length ? (
+        <div className="form-card compact-card">
+          <h2>Efeitos</h2>
+          {clip.effects.map((effect) => (
+            <div className="effect-control" key={effect.id}>
+              <label className="check-row"><input checked={effect.enabled} type="checkbox" onChange={(event) => updateClip(clip.id, { effects: clip.effects.map((item) => item.id === effect.id ? { ...item, enabled: event.target.checked } : item) })} /> <span>{effect.name}</span></label>
+              {effect.type !== 'vignette' ? <input className="slider" max="2" min="0" step="0.01" type="range" value={Number(effect.params.amount || 1)} onChange={(event) => updateClip(clip.id, { effects: clip.effects.map((item) => item.id === effect.id ? { ...item, params: { ...item.params, amount: Number(event.target.value) } } : item) })} /> : null}
+              <button className="button button--ghost" type="button" onClick={() => updateClip(clip.id, { effects: clip.effects.filter((item) => item.id !== effect.id) })}>Remover</button>
+            </div>
+          ))}
+        </div>
+      ) : null}
       {clip.type === 'text' && clip.style ? (
         <>
           <Field label="Tamanho"><TextInput type="number" value={clip.style.fontSize} onChange={(event) => updateClip(clip.id, { style: { ...clip.style!, fontSize: Number(event.target.value) } })} /></Field>

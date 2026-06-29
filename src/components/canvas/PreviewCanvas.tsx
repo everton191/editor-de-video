@@ -15,6 +15,7 @@ export function PreviewCanvas() {
 
   if (!currentProject) return null
   const visibleClips = getVisibleClipsAtTime(currentProject, currentTime)
+  const visibleCaptions = currentProject.captions.filter((caption) => currentTime >= caption.start && currentTime <= caption.start + caption.duration)
 
   return (
     <section className="preview-panel">
@@ -38,6 +39,7 @@ export function PreviewCanvas() {
                   width,
                   opacity: clip.opacity,
                   transform: `translate(-50%, -50%) scale(${clip.scale}) rotate(${clip.rotation}deg)`,
+                  filter: previewFilter(clip),
                   color: clip.style?.color,
                   fontSize: `${clip.style?.fontSize || 64}px`,
                   fontWeight: clip.style?.fontWeight,
@@ -61,13 +63,14 @@ export function PreviewCanvas() {
             )
           }
           if (asset?.type === 'image') {
-            return <img className={`canvas-object canvas-object--media ${selectedClass}`} key={clip.id} src={asset.src} alt={asset.name} style={{ left, top, width, opacity: clip.opacity, transform: `translate(-50%, -50%) scale(${clip.scale}) rotate(${clip.rotation}deg)` }} onClick={() => selectClip(clip.id)} />
+            return <img className={`canvas-object canvas-object--media ${selectedClass}`} key={clip.id} src={asset.src} alt={asset.name} style={{ left, top, width, opacity: clip.opacity, filter: previewFilter(clip), transform: `translate(-50%, -50%) scale(${clip.scale}) rotate(${clip.rotation}deg)` }} onClick={() => selectClip(clip.id)} />
           }
           if (asset?.type === 'video') {
-            return <video className={`canvas-object canvas-object--video ${selectedClass}`} key={clip.id} src={asset.src} muted playsInline style={{ left: '50%', top: '50%', width: '100%', opacity: clip.opacity, transform: `translate(-50%, -50%) scale(${clip.scale}) rotate(${clip.rotation}deg)` }} onClick={() => selectClip(clip.id)} />
+            return <video className={`canvas-object canvas-object--video ${selectedClass}`} key={clip.id} src={asset.src} muted playsInline style={{ left: '50%', top: '50%', width: '100%', opacity: clip.opacity, filter: previewFilter(clip), transform: `translate(-50%, -50%) scale(${clip.scale}) rotate(${clip.rotation}deg)` }} onClick={() => selectClip(clip.id)} />
           }
           return null
         })}
+        {visibleCaptions.map((caption) => <div className={`preview-caption preview-caption--${caption.style.position}`} key={caption.id} style={{ color: caption.style.color, background: caption.style.backgroundColor, fontFamily: caption.style.fontFamily, fontSize: caption.style.fontSize, fontWeight: caption.style.fontWeight, textAlign: caption.style.align }}>{caption.text}</div>)}
         {!visibleClips.length ? <div className="preview-empty"><strong>Importe midia ou adicione texto</strong><span>O preview mostra os elementos ativos no tempo atual.</span></div> : null}
       </div>
       <div className="preview-controls">
@@ -77,4 +80,15 @@ export function PreviewCanvas() {
       </div>
     </section>
   )
+}
+
+function previewFilter(clip: { effects: Array<{ type: string; enabled: boolean; params: Record<string, number | string | boolean> }> }) {
+  const filters: string[] = []
+  for (const effect of clip.effects.filter((item) => item.enabled)) {
+    if (effect.type === 'brightness') filters.push(`brightness(${Number(effect.params.amount || 1.1)})`)
+    if (effect.type === 'contrast') filters.push(`contrast(${Number(effect.params.amount || 1.08)})`)
+    if (effect.type === 'saturation') filters.push(`saturate(${Number(effect.params.amount || 1.12)})`)
+    if (effect.type === 'grayscale') filters.push(`grayscale(${Number(effect.params.amount || 1)})`)
+  }
+  return filters.join(' ')
 }

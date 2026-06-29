@@ -134,6 +134,30 @@ export function drawFrame(
   for (const clip of activeClips) {
     drawClip(context, clip, mediaCache, time, scaleX, scaleY, settings)
   }
+  for (const transition of project.transitions.filter((item) => time >= item.start && time <= item.start + item.duration)) {
+    if (transition.type === 'flash' || transition.type === 'fade') {
+      context.save()
+      const midpoint = Math.abs((time - transition.start) / transition.duration - 0.5) * 2
+      context.globalAlpha = transition.type === 'flash' ? 0.32 * (1 - midpoint) : 0.18 * (1 - midpoint)
+      context.fillStyle = transition.type === 'flash' ? '#ffffff' : '#000000'
+      context.fillRect(0, 0, width, height)
+      context.restore()
+    }
+  }
+  for (const caption of project.captions.filter((item) => time >= item.start && time <= item.start + item.duration)) {
+    context.save()
+    const fontSize = caption.style.fontSize * scaleY
+    const y = caption.style.position === 'top' ? height * 0.16 : caption.style.position === 'center' ? height * 0.5 : height * 0.84
+    context.font = `${caption.style.fontWeight} ${fontSize}px ${caption.style.fontFamily}`
+    context.textAlign = caption.style.align
+    context.textBaseline = 'middle'
+    const textWidth = Math.min(width * 0.86, context.measureText(caption.text).width + 48)
+    context.fillStyle = caption.style.backgroundColor
+    context.fillRect((width - textWidth) / 2, y - fontSize, textWidth, fontSize * 1.85)
+    context.fillStyle = caption.style.color
+    context.fillText(caption.text, width / 2, y, width * 0.8)
+    context.restore()
+  }
   context.restore()
 }
 
@@ -151,9 +175,7 @@ function drawClip(
   context.translate(clip.position.x * scaleX, clip.position.y * scaleY)
   context.rotate((clip.rotation * Math.PI) / 180)
   context.scale(clip.scale, clip.scale)
-  if (settings.improveContrast || settings.improveSaturation || settings.sharpen) {
-    context.filter = `contrast(${settings.improveContrast ? 1.05 : 1}) saturate(${settings.improveSaturation ? 1.08 : 1})`
-  }
+  context.filter = buildCanvasFilter(clip, settings)
 
   if (clip.type === 'text') {
     context.font = `${clip.style?.fontWeight || '700'} ${(clip.style?.fontSize || 72) * scaleY}px ${clip.style?.fontFamily || 'Arial'}`
@@ -172,6 +194,20 @@ function drawClip(
     }
   }
   context.restore()
+}
+
+function buildCanvasFilter(clip: TimelineClip, settings: ExportSettings) {
+  const filters = [
+    `contrast(${settings.improveContrast ? 1.05 : 1})`,
+    `saturate(${settings.improveSaturation ? 1.08 : 1})`,
+  ]
+  for (const effect of clip.effects.filter((item) => item.enabled)) {
+    if (effect.type === 'brightness') filters.push(`brightness(${Number(effect.params.amount || 1.1)})`)
+    if (effect.type === 'contrast') filters.push(`contrast(${Number(effect.params.amount || 1.08)})`)
+    if (effect.type === 'saturation') filters.push(`saturate(${Number(effect.params.amount || 1.12)})`)
+    if (effect.type === 'grayscale') filters.push(`grayscale(${Number(effect.params.amount || 1)})`)
+  }
+  return filters.join(' ')
 }
 
 function stopRecorder(recorder: MediaRecorder, chunks: Blob[]): Promise<Blob> {

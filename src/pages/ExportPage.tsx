@@ -11,6 +11,7 @@ export function ExportPage() {
     updateExportSettings,
     getExportPlan,
     renderCurrentProject,
+    cancelRender,
     isRendering,
     renderProgress,
     renderStatus,
@@ -32,6 +33,7 @@ export function ExportPage() {
           <Button variant="primary" icon={<Download size={18} />} disabled={isRendering} onClick={() => void renderCurrentProject()}>
             {isRendering ? 'Exportando...' : 'Exportar agora'}
           </Button>
+          {isRendering ? <Button variant="danger" onClick={cancelRender}>Cancelar exportacao</Button> : null}
           <div className="render-progress" aria-label="Progresso da exportacao">
             <span style={{ width: `${renderProgress}%` }} />
           </div>

@@ -27,6 +27,7 @@ export function ToolPanel() {
   const mediaRef = useRef<HTMLInputElement>(null)
   const audioRef = useRef<HTMLInputElement>(null)
   const backupRef = useRef<HTMLInputElement>(null)
+  const captionsRef = useRef<HTMLInputElement>(null)
   const {
     activePanel,
     currentProject,
@@ -35,7 +36,9 @@ export function ToolPanel() {
     importProjectBackup,
     addTextClip,
     addCaption,
+    exportCaptionsSrt,
     addStickerClip,
+    importCaptionsSrt,
     applyEffectToSelected,
     addTransitionPreset,
     installedPackIds,
@@ -51,6 +54,7 @@ export function ToolPanel() {
       <input accept="video/mp4,video/webm,image/png,image/jpeg,image/webp,audio/mpeg,audio/wav,audio/ogg" hidden multiple ref={mediaRef} type="file" onChange={(event) => event.target.files && void importFiles(event.target.files)} />
       <input accept="audio/mpeg,audio/wav,audio/ogg" hidden multiple ref={audioRef} type="file" onChange={(event) => event.target.files && void importFiles(event.target.files)} />
       <input accept="application/json,.json,.videolab.json" hidden ref={backupRef} type="file" onChange={(event) => event.target.files?.[0] && void importProjectBackup(event.target.files[0])} />
+      <input accept=".srt,text/plain" hidden ref={captionsRef} type="file" onChange={(event) => event.target.files?.[0] && void importCaptionsSrt(event.target.files[0])} />
       {activePanel === 'media' ? (
         <>
           <PanelHeader title="Midia" description="Importe video, imagem, audio e backup de projeto." />
@@ -102,6 +106,8 @@ export function ToolPanel() {
         <>
           <PanelHeader title="Legendas" description="Legendas manuais, sem transcricao por IA." />
           <Button variant="primary" icon={<Subtitles size={18} />} onClick={addCaption}>Adicionar legenda manual</Button>
+          <Button variant="secondary" onClick={() => captionsRef.current?.click()}>Importar SRT</Button>
+          <Button variant="secondary" onClick={exportCaptionsSrt}>Exportar SRT</Button>
           <small className="muted">{currentProject?.captions.length || 0} legenda(s) no projeto.</small>
         </>
       ) : null}
