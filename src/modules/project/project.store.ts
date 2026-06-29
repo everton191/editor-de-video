@@ -6,9 +6,11 @@ import { buildFfmpegPlan, exportPresets } from '../render/render.engine'
 import type { ExportSettings } from '../render/render.types'
 import { createClipFromAsset, moveClip, splitClipAt } from '../timeline/timeline.engine'
 import { mockPacks } from '../../data/mockPacks'
+import { fetchPackCatalog, resolveInstallablePack } from '../packs/pack.catalog'
 import { validatePackManifest } from '../packs/manifest.validator'
 import { createProject, touchProject } from './project.engine'
-import { deleteInstalledPack, deleteProject, getProject, listInstalledPacks, listProjectAssets, listProjects, saveInstalledPack, saveProject, saveProjectAsset, saveProjectVersion } from './project.persistence'
+import { deleteInstalledPack, deleteProject, getProject, listInstalledPacks, listProjectAssets, listProjects, saveInstalledPack, saveInstalledPackAsset, saveProject, saveProjectAsset, saveProjectVersion } from './project.persistence'
+import type { EffectPack } from '../packs/packs.types'
 import type { EditorAsset, ProjectJson, ProjectRecord, TextStyle, TimelineClip, VideoFormat } from './project.types'
 import { downloadProjectBackup, readProjectBackup } from './project.backup'
 
@@ -27,6 +29,8 @@ interface EditorState {
   saveStatus: SaveStatus
   installedPackIds: string[]
   installedPackItemCount: number
+  availablePacks: EffectPack[]
+  packCatalogStatus: string
   lastError?: string
   renderProgress: number
   renderStatus: string
@@ -36,6 +40,7 @@ interface EditorState {
   setActivePanel: (panel: EditorPanel) => void
   refreshProjects: () => Promise<void>
   refreshInstalledPacks: () => Promise<void>
+  refreshOnlinePacks: () => Promise<void>
   createNewProject: (input: { title: string; format: VideoFormat; width?: number; height?: number; fps?: number }) => Promise<void>
   openProject: (id: string) => Promise<void>
   duplicateProject: (id: string) => Promise<void>
@@ -170,6 +175,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   saveStatus: 'salvo',
   installedPackIds: [],
   installedPackItemCount: 0,
+  availablePacks: mockPacks,
+  packCatalogStatus: 'Catalogo local carregado.',
   renderProgress: 0,
   renderStatus: 'Aguardando',
   isRendering: false,
@@ -188,6 +195,21 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       installedPackIds: packs.map((pack) => pack.id),
       installedPackItemCount: packs.reduce((total, pack) => total + pack.manifest.items.length, 0),
     })
+  },
+
+  refreshOnlinePacks: async () => {
+    set({ packCatalogStatus: 'Atualizando catalogo do GitHub...' })
+    try {
+      const catalog = await fetchPackCatalog()
+      const merged = mergePacks(mockPacks, catalog.packs)
+      set({ availablePacks: merged, packCatalogStatus: `${catalog.packs.length} pacote(s) encontrados no GitHub.`, lastError: undefined })
+    } catch (error) {
+      set({
+        availablePacks: mockPacks,
+        packCatalogStatus: 'Usando catalogo local. Nao foi possivel consultar o GitHub.',
+        lastError: error instanceof Error ? error.message : 'Nao foi possivel atualizar o catalogo.',
+      })
+    }
   },
 
   createNewProject: async (input) => {
@@ -558,20 +580,22 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setCurrentTime: (time) => set({ currentTime: Math.max(0, time) }),
   togglePlayback: () => set((state) => ({ isPlaying: !state.isPlaying })),
   installPack: async (id) => {
-    const pack = mockPacks.find((item) => item.id === id)
+    const pack = get().availablePacks.find((item) => item.id === id) || mockPacks.find((item) => item.id === id)
     if (!pack) return
-    const validation = validatePackManifest(pack.manifest)
-    if (!validation.valid) {
-      set({ lastError: validation.error })
-      return
+    try {
+      const validation = validatePackManifest(pack.manifest)
+      if (!pack.packageUrl && !pack.manifestUrl && !validation.valid) {
+        set({ lastError: validation.error })
+        return
+      }
+      const installable = await resolveInstallablePack(pack)
+      await saveInstalledPack(installable.record)
+      for (const asset of installable.assets) await saveInstalledPackAsset(asset)
+      await get().refreshInstalledPacks()
+      set({ lastError: undefined })
+    } catch (error) {
+      set({ lastError: error instanceof Error ? error.message : 'Nao foi possivel instalar o pacote.' })
     }
-    await saveInstalledPack({
-      id: pack.id,
-      status: 'instalado',
-      manifest: pack.manifest,
-      updated_at: new Date().toISOString(),
-    })
-    await get().refreshInstalledPacks()
   },
   removePack: async (id) => {
     await deleteInstalledPack(id)
@@ -623,3 +647,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 }))
 
 export { exportPresets }
+
+function mergePacks(localPacks: EffectPack[], onlinePacks: EffectPack[]) {
+  const byId = new Map<string, EffectPack>()
+  for (const pack of localPacks) byId.set(pack.id, pack)
+  for (const pack of onlinePacks) byId.set(pack.id, pack)
+  return Array.from(byId.values())
+}

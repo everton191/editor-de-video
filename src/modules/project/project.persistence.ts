@@ -1,6 +1,6 @@
 import Dexie, { type Table } from 'dexie'
 import type { ProjectAssetRecord, ProjectRecord, ProjectVersionRecord } from './project.types'
-import type { InstalledPackRecord } from '../packs/packs.types'
+import type { InstalledPackAssetRecord, InstalledPackRecord } from '../packs/packs.types'
 import type { LocalSettingsRecord } from '../settings/settings.types'
 import type { ExportRecord } from '../render/render.types'
 
@@ -9,6 +9,7 @@ class VideoLabDatabase extends Dexie {
   project_versions!: Table<ProjectVersionRecord, string>
   project_assets!: Table<ProjectAssetRecord, string>
   installed_packs!: Table<InstalledPackRecord, string>
+  installed_pack_assets!: Table<InstalledPackAssetRecord, string>
   exports!: Table<ExportRecord, string>
   local_settings!: Table<LocalSettingsRecord, string>
 
@@ -29,6 +30,15 @@ class VideoLabDatabase extends Dexie {
       exports: 'id, project_id, status, created_at',
       local_settings: 'id',
     })
+    this.version(3).stores({
+      projects: 'id, updated_at, title, format',
+      project_versions: 'id, project_id, version_number, created_at',
+      project_assets: 'id, project_id, asset_id, type, created_at',
+      installed_packs: 'id, status, updated_at',
+      installed_pack_assets: 'id, pack_id, path, created_at',
+      exports: 'id, project_id, status, created_at',
+      local_settings: 'id',
+    })
   }
 }
 
@@ -41,7 +51,15 @@ export const saveProjectAsset = (record: ProjectAssetRecord) => db.project_asset
 export const listProjectAssets = (projectId: string) => db.project_assets.where('project_id').equals(projectId).toArray()
 export const listInstalledPacks = () => db.installed_packs.toArray()
 export const saveInstalledPack = (record: InstalledPackRecord) => db.installed_packs.put(record)
-export const deleteInstalledPack = (id: string) => db.installed_packs.delete(id)
+export const saveInstalledPackAsset = (record: InstalledPackAssetRecord) => db.installed_pack_assets.put(record)
+export const listInstalledPackAssets = (packId: string) => db.installed_pack_assets.where('pack_id').equals(packId).toArray()
+
+export async function deleteInstalledPack(id: string) {
+  await db.transaction('rw', db.installed_packs, db.installed_pack_assets, async () => {
+    await db.installed_packs.delete(id)
+    await db.installed_pack_assets.where('pack_id').equals(id).delete()
+  })
+}
 
 export async function deleteProject(id: string) {
   await db.transaction('rw', db.projects, db.project_versions, db.project_assets, async () => {

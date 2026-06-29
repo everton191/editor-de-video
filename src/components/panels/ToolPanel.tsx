@@ -1,6 +1,5 @@
 import { FileJson, FilePlus2, MessageSquareText, Music, PackageMinus, PackagePlus, Sparkles, Sticker, Subtitles } from 'lucide-react'
 import { useRef } from 'react'
-import { mockPacks } from '../../data/mockPacks'
 import { Button } from '../ui/Button'
 import { SelectInput } from '../ui/Field'
 import { useEditorStore } from '../../modules/project/project.store'
@@ -44,6 +43,7 @@ export function ToolPanel() {
     importCaptionsSrt,
     applyEffectToSelected,
     addTransitionPreset,
+    availablePacks,
     installedPackIds,
     installPack,
     removePack,
@@ -118,7 +118,7 @@ export function ToolPanel() {
         <>
           <PanelHeader title="Pacotes" description="Instale/remova estilos visuais para uso offline." />
           <div className="tool-list">
-            {mockPacks.map((pack) => {
+            {availablePacks.slice(0, 6).map((pack) => {
               const installed = installedPackIds.includes(pack.id)
               return <button key={pack.id} type="button" onClick={() => void (installed ? removePack(pack.id) : installPack(pack.id))}>{installed ? <PackageMinus size={16} /> : <PackagePlus size={16} />}{pack.name}<small>{installed ? 'Instalado' : 'Disponivel'} - {pack.manifest.items.length} item(ns)</small></button>
             })}
