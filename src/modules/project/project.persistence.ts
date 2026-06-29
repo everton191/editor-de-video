@@ -39,6 +39,9 @@ export const getProject = (id: string) => db.projects.get(id)
 export const saveProjectVersion = (record: ProjectVersionRecord) => db.project_versions.put(record)
 export const saveProjectAsset = (record: ProjectAssetRecord) => db.project_assets.put(record)
 export const listProjectAssets = (projectId: string) => db.project_assets.where('project_id').equals(projectId).toArray()
+export const listInstalledPacks = () => db.installed_packs.toArray()
+export const saveInstalledPack = (record: InstalledPackRecord) => db.installed_packs.put(record)
+export const deleteInstalledPack = (id: string) => db.installed_packs.delete(id)
 
 export async function deleteProject(id: string) {
   await db.transaction('rw', db.projects, db.project_versions, db.project_assets, async () => {

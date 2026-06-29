@@ -4,8 +4,10 @@ import { downloadRenderResult, renderProjectInBrowser } from '../render/browser-
 import { buildFfmpegPlan, exportPresets } from '../render/render.engine'
 import type { ExportSettings } from '../render/render.types'
 import { createClipFromAsset, moveClip, splitClipAt } from '../timeline/timeline.engine'
+import { mockPacks } from '../../data/mockPacks'
+import { validatePackManifest } from '../packs/manifest.validator'
 import { createProject, touchProject } from './project.engine'
-import { deleteProject, getProject, listProjectAssets, listProjects, saveProject, saveProjectAsset, saveProjectVersion } from './project.persistence'
+import { deleteInstalledPack, deleteProject, getProject, listInstalledPacks, listProjectAssets, listProjects, saveInstalledPack, saveProject, saveProjectAsset, saveProjectVersion } from './project.persistence'
 import type { EditorAsset, ProjectJson, ProjectRecord, TextStyle, TimelineClip, VideoFormat } from './project.types'
 import { downloadProjectBackup, readProjectBackup } from './project.backup'
 
@@ -21,6 +23,7 @@ interface EditorState {
   isPlaying: boolean
   saveStatus: SaveStatus
   installedPackIds: string[]
+  installedPackItemCount: number
   lastError?: string
   renderProgress: number
   renderStatus: string
@@ -28,6 +31,7 @@ interface EditorState {
   exportSettings: ExportSettings
   goTo: (view: AppView) => void
   refreshProjects: () => Promise<void>
+  refreshInstalledPacks: () => Promise<void>
   createNewProject: (input: { title: string; format: VideoFormat; width?: number; height?: number; fps?: number }) => Promise<void>
   openProject: (id: string) => Promise<void>
   duplicateProject: (id: string) => Promise<void>
@@ -45,8 +49,8 @@ interface EditorState {
   duplicateSelectedClip: () => void
   setCurrentTime: (time: number) => void
   togglePlayback: () => void
-  installPack: (id: string) => void
-  removePack: (id: string) => void
+  installPack: (id: string) => Promise<void>
+  removePack: (id: string) => Promise<void>
   updateExportSettings: (patch: Partial<ExportSettings>) => void
   renderCurrentProject: () => Promise<void>
   getExportPlan: () => ReturnType<typeof buildFfmpegPlan> | undefined
@@ -119,6 +123,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   isPlaying: false,
   saveStatus: 'salvo',
   installedPackIds: [],
+  installedPackItemCount: 0,
   renderProgress: 0,
   renderStatus: 'Aguardando',
   isRendering: false,
@@ -130,6 +135,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ projects: await listProjects() })
   },
 
+  refreshInstalledPacks: async () => {
+    const packs = await listInstalledPacks()
+    set({
+      installedPackIds: packs.map((pack) => pack.id),
+      installedPackItemCount: packs.reduce((total, pack) => total + pack.manifest.items.length, 0),
+    })
+  },
+
   createNewProject: async (input) => {
     const project = createProject(input)
     await saveProject(toProjectRecord(project))
@@ -138,13 +151,17 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
 
   openProject: async (id) => {
-    const record = await getProject(id)
-    if (!record) {
-      set({ lastError: 'Projeto nao encontrado.' })
-      return
+    try {
+      const record = await getProject(id)
+      if (!record) {
+        set({ lastError: 'Projeto nao encontrado.' })
+        return
+      }
+      const hydratedProject = await hydrateProjectAssets(record.project_json)
+      set({ currentProject: hydratedProject, selectedClipId: undefined, currentTime: 0, view: 'editor', saveStatus: 'salvo', lastError: undefined })
+    } catch (error) {
+      set({ lastError: error instanceof Error ? error.message : 'Nao foi possivel abrir o projeto.' })
     }
-    const hydratedProject = await hydrateProjectAssets(record.project_json)
-    set({ currentProject: hydratedProject, selectedClipId: undefined, currentTime: 0, view: 'editor', saveStatus: 'salvo' })
   },
 
   duplicateProject: async (id) => {
@@ -343,8 +360,26 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   setCurrentTime: (time) => set({ currentTime: Math.max(0, time) }),
   togglePlayback: () => set((state) => ({ isPlaying: !state.isPlaying })),
-  installPack: (id) => set((state) => ({ installedPackIds: state.installedPackIds.includes(id) ? state.installedPackIds : [...state.installedPackIds, id] })),
-  removePack: (id) => set((state) => ({ installedPackIds: state.installedPackIds.filter((packId) => packId !== id) })),
+  installPack: async (id) => {
+    const pack = mockPacks.find((item) => item.id === id)
+    if (!pack) return
+    const validation = validatePackManifest(pack.manifest)
+    if (!validation.valid) {
+      set({ lastError: validation.error })
+      return
+    }
+    await saveInstalledPack({
+      id: pack.id,
+      status: 'instalado',
+      manifest: pack.manifest,
+      updated_at: new Date().toISOString(),
+    })
+    await get().refreshInstalledPacks()
+  },
+  removePack: async (id) => {
+    await deleteInstalledPack(id)
+    await get().refreshInstalledPacks()
+  },
   updateExportSettings: (patch) => set((state) => ({ exportSettings: { ...state.exportSettings, ...patch } })),
   renderCurrentProject: async () => {
     const project = get().currentProject

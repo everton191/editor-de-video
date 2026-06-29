@@ -1,4 +1,4 @@
-import { Copy, FolderOpen, Package, Plus, Settings, Trash2, Upload } from 'lucide-react'
+import { Copy, FolderOpen, Package, Play, Plus, Settings, Trash2, Upload } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { Button } from '../components/ui/Button'
 import { useEditorStore } from '../modules/project/project.store'
@@ -28,9 +28,13 @@ export function HomePage() {
         <div className="project-grid">
           {projects.map((project) => (
             <article className="project-card" key={project.id}>
-              <button className="project-thumb" type="button" onClick={() => void openProject(project.id)}><span>{project.format}</span></button>
-              <div className="project-card__body"><strong>{project.title}</strong><small>{project.width}x{project.height} · {project.fps} FPS · {formatTime(project.duration)}</small><small>Atualizado em {new Date(project.updated_at).toLocaleString('pt-BR')}</small></div>
-              <div className="project-card__actions"><Button variant="ghost" icon={<Copy size={16} />} onClick={() => void duplicateProject(project.id)} aria-label="Duplicar" /><Button variant="danger" icon={<Trash2 size={16} />} onClick={() => void removeProject(project.id)} aria-label="Excluir" /></div>
+              <button className="project-main" type="button" onClick={() => void openProject(project.id)}>
+                <span className="project-thumb">{project.format}</span>
+                <span className="project-card__body project-card__open">
+                  <strong>{project.title}</strong><small>{project.width}x{project.height} · {project.fps} FPS · {formatTime(project.duration)}</small><small>Atualizado em {new Date(project.updated_at).toLocaleString('pt-BR')}</small>
+                </span>
+              </button>
+              <div className="project-card__actions"><Button variant="secondary" icon={<Play size={16} />} onClick={() => void openProject(project.id)}>Abrir</Button><Button variant="ghost" icon={<Copy size={16} />} onClick={() => void duplicateProject(project.id)} aria-label="Duplicar" /><Button variant="danger" icon={<Trash2 size={16} />} onClick={() => void removeProject(project.id)} aria-label="Excluir" /></div>
             </article>
           ))}
           {!projects.length ? <div className="empty-state">Nenhum projeto salvo ainda. Comece por “Novo projeto”.</div> : null}
