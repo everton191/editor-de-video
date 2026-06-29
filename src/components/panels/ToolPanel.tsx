@@ -5,14 +5,17 @@ import { Button } from '../ui/Button'
 import { SelectInput } from '../ui/Field'
 import { useEditorStore } from '../../modules/project/project.store'
 
-const textPresets = ['Titulo grande', 'Legenda simples', 'Preco promocional', 'Chamada para WhatsApp']
-const templatePresets = ['Promocao Vertical', 'Cardapio Story', 'Intro YouTube']
+const textPresets = ['Titulo cinematico', 'Legenda limpa', 'Credito final', 'Texto glitch', 'Lower third']
+const templatePresets = ['Intro cinematico', 'Split screen', 'Montagem rapida', 'Vlog vertical', 'Mood board']
 const effectPresets = [
   { id: 'brightness', type: 'brightness', name: 'Brilho', params: { amount: 1.1 } },
   { id: 'contrast', type: 'contrast', name: 'Contraste', params: { amount: 1.08 } },
   { id: 'saturation', type: 'saturation', name: 'Saturacao', params: { amount: 1.12 } },
   { id: 'bw', type: 'grayscale', name: 'Preto e branco', params: { amount: 1 } },
   { id: 'vignette', type: 'vignette', name: 'Vinheta', params: { amount: 0.35 } },
+  { id: 'cinema', type: 'contrast', name: 'Cinema suave', params: { amount: 1.16 } },
+  { id: 'dream', type: 'brightness', name: 'Sonho claro', params: { amount: 1.18 } },
+  { id: 'neon', type: 'saturation', name: 'Neon vivo', params: { amount: 1.35 } },
 ]
 const transitionPresets = [
   { id: 'fade', name: 'Fade', duration: 0.5 },
@@ -21,7 +24,7 @@ const transitionPresets = [
   { id: 'flash', name: 'Flash', duration: 0.35 },
   { id: 'wipe', name: 'Wipe', duration: 0.6 },
 ]
-const stickerPresets = ['NOVO', 'OFERTA', 'TOP', '4K', 'PLAY']
+const stickerPresets = ['PLAY', 'REC', 'VHS', '35MM', 'FOCO', 'LUZ', 'CUT']
 
 export function ToolPanel() {
   const mediaRef = useRef<HTMLInputElement>(null)
@@ -113,7 +116,7 @@ export function ToolPanel() {
       ) : null}
       {activePanel === 'packs' ? (
         <>
-          <PanelHeader title="Pacotes" description="Instale/remova pacotes mockados para uso offline." />
+          <PanelHeader title="Pacotes" description="Instale/remova estilos visuais para uso offline." />
           <div className="tool-list">
             {mockPacks.map((pack) => {
               const installed = installedPackIds.includes(pack.id)

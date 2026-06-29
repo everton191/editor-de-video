@@ -19,7 +19,7 @@ export function HomePage() {
         </div>
       </section>
       <section className="quick-grid">
-        <button className="quick-card" type="button" onClick={() => goTo('packs')}><Package size={24} /><strong>Pacotes</strong><span>Efeitos e templates mockados.</span></button>
+        <button className="quick-card" type="button" onClick={() => goTo('packs')}><Package size={24} /><strong>Pacotes</strong><span>Looks, overlays e templates visuais.</span></button>
         <button className="quick-card" type="button" onClick={() => goTo('settings')}><Settings size={24} /><strong>Configuracoes</strong><span>Qualidade, tema e renderizacao.</span></button>
         <button className="quick-card" type="button"><Upload size={24} /><strong>Backup futuro</strong><span>Estrutura preparada.</span></button>
       </section>

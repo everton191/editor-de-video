@@ -44,7 +44,7 @@ export function createProject(input: {
     format: input.format,
     width,
     height,
-    duration: 15,
+    duration: 0,
     fps: input.fps || 30,
     background: input.background || '#000000',
     assets: [],
@@ -61,7 +61,7 @@ export function touchProject(project: ProjectJson): ProjectJson {
     ...project,
     updatedAt: now(),
     duration: Math.max(
-      1,
+      0,
       ...project.clips.map((clip) => clip.start + clip.duration),
       ...project.captions.map((caption) => caption.start + caption.duration),
     ),

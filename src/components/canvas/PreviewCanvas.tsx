@@ -9,6 +9,7 @@ export function PreviewCanvas() {
 
   useEffect(() => {
     if (!isPlaying || !currentProject) return
+    if (currentProject.duration <= 0) return
     const timer = window.setInterval(() => setCurrentTime(currentTime + 0.1 >= currentProject.duration ? 0 : currentTime + 0.1), 100)
     return () => window.clearInterval(timer)
   }, [currentTime, currentProject, isPlaying, setCurrentTime])
@@ -76,7 +77,7 @@ export function PreviewCanvas() {
       <div className="preview-controls">
         <Button variant="ghost" icon={isPlaying ? <Pause size={20} /> : <Play size={20} />} onClick={togglePlayback}>{isPlaying ? 'Pausar' : 'Play'}</Button>
         <span>{currentTime.toFixed(2)}s / {currentProject.duration.toFixed(2)}s</span>
-        <input aria-label="Tempo atual" max={currentProject.duration} min={0} step={0.01} type="range" value={currentTime} onChange={(event) => setCurrentTime(Number(event.target.value))} />
+        <input aria-label="Tempo atual" disabled={currentProject.duration <= 0} max={Math.max(0.01, currentProject.duration)} min={0} step={0.01} type="range" value={Math.min(currentTime, Math.max(0, currentProject.duration))} onChange={(event) => setCurrentTime(Number(event.target.value))} />
       </div>
     </section>
   )

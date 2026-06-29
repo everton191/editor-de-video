@@ -1,7 +1,7 @@
 import { Capacitor, registerPlugin } from '@capacitor/core'
 
-export const APP_VERSION_CODE = 3
-export const APP_VERSION_NAME = '1.2'
+export const APP_VERSION_CODE = 4
+export const APP_VERSION_NAME = '1.3'
 export const UPDATE_FEED_URL = 'https://raw.githubusercontent.com/everton191/editor-de-video/main/downloads/update.json'
 
 type VideoLabUpdatePlugin = {
