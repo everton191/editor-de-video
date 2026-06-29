@@ -4,7 +4,18 @@ import { Field, SelectInput } from '../components/ui/Field'
 import { exportPresets, useEditorStore } from '../modules/project/project.store'
 
 export function ExportPage() {
-  const { currentProject, goTo, exportSettings, updateExportSettings, getExportPlan } = useEditorStore()
+  const {
+    currentProject,
+    goTo,
+    exportSettings,
+    updateExportSettings,
+    getExportPlan,
+    renderCurrentProject,
+    isRendering,
+    renderProgress,
+    renderStatus,
+    lastError,
+  } = useEditorStore()
   const plan = getExportPlan()
   if (!currentProject) return null
   return (
@@ -18,8 +29,14 @@ export function ExportPage() {
           <label className="check-row"><input checked={exportSettings.improveQuality} type="checkbox" onChange={(event) => updateExportSettings({ improveQuality: event.target.checked })} /><span>Melhorar Qualidade</span></label>
           <p className="notice">Esta melhoria usa processamento tradicional. Ela pode aumentar a resolucao e melhorar a aparencia, mas nao cria detalhes reais que nao existem no video original.</p>
           <div className="check-grid"><label><input checked={exportSettings.sharpen} type="checkbox" onChange={(event) => updateExportSettings({ sharpen: event.target.checked })} /> Nitidez</label><label><input checked={exportSettings.denoise} type="checkbox" onChange={(event) => updateExportSettings({ denoise: event.target.checked })} /> Reduzir ruido</label><label><input checked={exportSettings.improveContrast} type="checkbox" onChange={(event) => updateExportSettings({ improveContrast: event.target.checked })} /> Contraste</label><label><input checked={exportSettings.improveSaturation} type="checkbox" onChange={(event) => updateExportSettings({ improveSaturation: event.target.checked })} /> Saturacao</label></div>
-          <Button variant="primary" icon={<Download size={18} />}>Preparar MP4</Button>
-          <small className="muted">Nesta fase o app prepara o plano de exportacao. Render real completa entra com FFmpeg.wasm/worker ou FFmpeg local.</small>
+          <Button variant="primary" icon={<Download size={18} />} disabled={isRendering} onClick={() => void renderCurrentProject()}>
+            {isRendering ? 'Exportando...' : 'Exportar agora'}
+          </Button>
+          <div className="render-progress" aria-label="Progresso da exportacao">
+            <span style={{ width: `${renderProgress}%` }} />
+          </div>
+          <small className="muted">{renderStatus}</small>
+          {lastError ? <p className="panel-error">{lastError}</p> : null}
         </div>
         <div className="preset-column"><h2>Presets</h2>{exportPresets.map((preset) => <button className="preset-card" key={preset.id} type="button" onClick={() => updateExportSettings(preset.settings)}><FileVideo2 size={20} /><strong>{preset.name}</strong><span>{preset.description}</span></button>)}</div>
         <div className="plan-card"><h2>Plano FFmpeg</h2><pre>{JSON.stringify(plan, null, 2)}</pre></div>

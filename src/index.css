@@ -112,6 +112,8 @@ pre { white-space: pre-wrap; word-break: break-word; color: #dbeafe; }
 .timeline-clip.is-selected { border-color: var(--accent-2); box-shadow: 0 0 0 1px var(--accent-2); }
 .timeline-caption { background: #a16207; height: 32px; top: auto; bottom: 10px; }
 .notice { color: #fde68a; border: 1px solid rgba(245,158,11,.35); background: rgba(245,158,11,.1); border-radius: var(--radius); padding: 10px; }
+.render-progress { height: 10px; overflow: hidden; border-radius: 999px; border: 1px solid var(--line); background: rgba(15,23,42,.82); }
+.render-progress span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .2s ease; }
 .preset-column { display: grid; gap: 10px; align-content: start; }
 .preset-card { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; }
 .preset-card span { grid-column: 2; color: var(--muted); }

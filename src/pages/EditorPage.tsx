@@ -8,7 +8,7 @@ import { Timeline } from '../components/timeline/Timeline'
 import { useEditorStore } from '../modules/project/project.store'
 
 export function EditorPage() {
-  const { currentProject, goTo, saveCurrentProject, togglePlayback, splitSelectedClip, deleteSelectedClip, duplicateSelectedClip } = useEditorStore()
+  const { currentProject, saveStatus, goTo, saveCurrentProject, togglePlayback, splitSelectedClip, deleteSelectedClip, duplicateSelectedClip } = useEditorStore()
   useEffect(() => { if (!currentProject) goTo('home') }, [currentProject, goTo])
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -21,6 +21,11 @@ export function EditorPage() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [deleteSelectedClip, duplicateSelectedClip, saveCurrentProject, splitSelectedClip, togglePlayback])
+  useEffect(() => {
+    if (saveStatus !== 'alterado') return
+    const timer = window.setTimeout(() => void saveCurrentProject(false), 1200)
+    return () => window.clearTimeout(timer)
+  }, [saveCurrentProject, saveStatus])
   if (!currentProject) return null
   return <main className="editor-page"><Topbar /><div className="editor-shell"><LeftSidebar /><MediaPanel /><div className="editor-center"><PreviewCanvas /><Timeline /></div><PropertiesPanel /></div></main>
 }

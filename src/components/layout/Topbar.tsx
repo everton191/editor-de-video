@@ -1,10 +1,10 @@
-import { ArrowLeft, Download, Eye, Redo2, Save, Undo2 } from 'lucide-react'
+import { ArrowLeft, Download, Eye, FileJson, Redo2, Save, Undo2 } from 'lucide-react'
 import { useEditorStore } from '../../modules/project/project.store'
 import { formatTime } from '../../utils/time'
 import { Button } from '../ui/Button'
 
 export function Topbar() {
-  const { currentProject, saveStatus, goTo, saveCurrentProject } = useEditorStore()
+  const { currentProject, saveStatus, goTo, saveCurrentProject, exportProjectBackup } = useEditorStore()
   if (!currentProject) return null
   return (
     <header className="topbar">
@@ -20,6 +20,7 @@ export function Topbar() {
         <Button variant="ghost" icon={<Redo2 size={18} />} aria-label="Refazer" />
         <Button variant="secondary" icon={<Eye size={18} />}>Visualizar</Button>
         <Button variant="secondary" icon={<Save size={18} />} onClick={() => void saveCurrentProject(true)}>Salvar</Button>
+        <Button variant="secondary" icon={<FileJson size={18} />} onClick={exportProjectBackup}>Backup</Button>
         <Button variant="primary" icon={<Download size={18} />} onClick={() => goTo('export')}>Exportar</Button>
       </div>
     </header>

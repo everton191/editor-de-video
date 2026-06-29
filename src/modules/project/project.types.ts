@@ -176,3 +176,15 @@ export interface ProjectVersionRecord {
   project_json: ProjectJson
   created_at: string
 }
+
+export interface ProjectAssetRecord {
+  id: string
+  project_id: string
+  asset_id: string
+  type: AssetType
+  name: string
+  mime_type: string
+  size: number
+  blob: Blob
+  created_at: string
+}

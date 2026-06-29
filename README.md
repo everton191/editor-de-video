@@ -22,6 +22,7 @@ Abra `http://127.0.0.1:5174` ou a URL indicada pelo Vite.
 7. Clique em `Salvar` para persistir o `project_json` no IndexedDB.
 8. Volte para a Home e reabra o projeto em `Projetos recentes`.
 9. Acesse `Exportar` para escolher resolucao, qualidade, 4K e presets de melhoria tradicional.
+10. Clique em `Exportar agora` para gerar um arquivo de video pelo navegador.
 
 ## O que ja funciona
 
@@ -32,12 +33,34 @@ Abra `http://127.0.0.1:5174` ou a URL indicada pelo Vite.
 - Criacao e reabertura de projetos.
 - Modelo `project_json` nao destrutivo.
 - Importacao de video, imagem e audio para assets locais do navegador.
+- Persistencia dos arquivos importados em IndexedDB para reabrir projetos com midia.
 - Canvas/preview com elementos ativos no tempo atual.
 - Texto editavel, selecionavel e arrastavel no canvas.
 - Timeline funcional com trilhas, clipes, playhead, selecao, dividir, duplicar e excluir.
 - Painel de propriedades para posicao, escala, rotacao, opacidade, duracao, volume e texto.
 - Pacotes mockados com validacao de `manifest.json`.
-- Tela de exportacao com 720p, 1080p, 2K, 4K, presets e plano FFmpeg.
+- Autosave simples depois de alteracoes.
+- Backup/importacao de `project_json`.
+- Tela de exportacao com 720p, 1080p, 2K, 4K, presets, plano FFmpeg e exportacao real via Canvas/MediaRecorder.
+- Base Android com Capacitor.
+
+## Android
+
+O projeto Android fica em `android/`.
+
+Com Android SDK configurado:
+
+```bash
+npm run build
+npx cap sync android
+.\android\gradlew.bat -p android assembleDebug
+```
+
+APK debug gerado em:
+
+```text
+android/app/build/outputs/apk/debug/app-debug.apk
+```
 
 ## Preparado para fase 2
 
@@ -49,6 +72,6 @@ Abra `http://127.0.0.1:5174` ou a URL indicada pelo Vite.
 
 ## Limitacoes atuais
 
-- A exportacao MP4 ainda prepara o plano de renderizacao, mas nao gera o arquivo final.
+- A exportacao no navegador usa `MediaRecorder`; dependendo do navegador, o arquivo pode sair em WebM em vez de MP4.
+- A exportacao ainda nao mistura audio no video final.
 - 4K no navegador pode consumir muita memoria; a rota recomendada para videos grandes e FFmpeg local em desktop ou Android nativo com pipeline proprio.
-- Arquivos importados usam `blob:` durante a sessao; a fase seguinte deve persistir blobs/assets no IndexedDB ou File System Access API quando disponivel.

@@ -1,17 +1,22 @@
 import { Copy, FolderOpen, Package, Plus, Settings, Trash2, Upload } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Button } from '../components/ui/Button'
 import { useEditorStore } from '../modules/project/project.store'
 import { formatTime } from '../utils/time'
 
 export function HomePage() {
-  const { projects, refreshProjects, goTo, openProject, duplicateProject, removeProject } = useEditorStore()
+  const backupRef = useRef<HTMLInputElement>(null)
+  const { projects, refreshProjects, goTo, openProject, duplicateProject, removeProject, importProjectBackup } = useEditorStore()
   useEffect(() => { void refreshProjects() }, [refreshProjects])
   return (
     <main className="home-page">
       <section className="home-hero">
         <div><span className="eyebrow">VideoLab Pessoal</span><h1>Editor de videos local-first para uso pessoal</h1><p>Crie projetos, importe midia, edite textos no canvas, organize clipes na timeline e prepare exportacao sem login, sem planos pagos e sem IA.</p></div>
-        <div className="hero-actions"><Button variant="primary" icon={<Plus size={18} />} onClick={() => goTo('new-project')}>Novo projeto</Button><Button variant="secondary" icon={<FolderOpen size={18} />}>Abrir projeto</Button></div>
+        <div className="hero-actions">
+          <input accept="application/json,.json,.videolab.json" hidden ref={backupRef} type="file" onChange={(event) => event.target.files?.[0] && void importProjectBackup(event.target.files[0])} />
+          <Button variant="primary" icon={<Plus size={18} />} onClick={() => goTo('new-project')}>Novo projeto</Button>
+          <Button variant="secondary" icon={<FolderOpen size={18} />} onClick={() => backupRef.current?.click()}>Abrir projeto</Button>
+        </div>
       </section>
       <section className="quick-grid">
         <button className="quick-card" type="button" onClick={() => goTo('packs')}><Package size={24} /><strong>Pacotes</strong><span>Efeitos e templates mockados.</span></button>

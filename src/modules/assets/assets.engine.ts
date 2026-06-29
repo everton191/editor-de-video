@@ -32,3 +32,48 @@ export function createAssetFromFile(file: File, type: AssetType, src: string): E
     createdAt: new Date().toISOString(),
   }
 }
+
+export async function createAssetWithMetadata(file: File, type: AssetType, src: string): Promise<EditorAsset> {
+  const asset = createAssetFromFile(file, type, src)
+  const metadata = await readMediaMetadata(file, type, src)
+  return {
+    ...asset,
+    ...metadata,
+  }
+}
+
+async function readMediaMetadata(file: File, type: AssetType, src: string) {
+  if (type === 'image') return readImageMetadata(src)
+  if (type === 'video') return readVideoMetadata(src)
+  if (type === 'audio') return readAudioMetadata(src)
+  return { size: file.size }
+}
+
+function readImageMetadata(src: string): Promise<{ width?: number; height?: number }> {
+  return new Promise((resolve) => {
+    const image = new Image()
+    image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight })
+    image.onerror = () => resolve({})
+    image.src = src
+  })
+}
+
+function readVideoMetadata(src: string): Promise<{ width?: number; height?: number; duration?: number }> {
+  return new Promise((resolve) => {
+    const video = document.createElement('video')
+    video.preload = 'metadata'
+    video.onloadedmetadata = () => resolve({ width: video.videoWidth, height: video.videoHeight, duration: video.duration })
+    video.onerror = () => resolve({})
+    video.src = src
+  })
+}
+
+function readAudioMetadata(src: string): Promise<{ duration?: number }> {
+  return new Promise((resolve) => {
+    const audio = document.createElement('audio')
+    audio.preload = 'metadata'
+    audio.onloadedmetadata = () => resolve({ duration: audio.duration })
+    audio.onerror = () => resolve({})
+    audio.src = src
+  })
+}

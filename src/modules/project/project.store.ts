@@ -1,11 +1,13 @@
 import { create } from 'zustand'
-import { createAssetFromFile, detectAssetType, validateMediaFile } from '../assets/assets.engine'
+import { createAssetWithMetadata, detectAssetType, validateMediaFile } from '../assets/assets.engine'
+import { downloadRenderResult, renderProjectInBrowser } from '../render/browser-renderer'
 import { buildFfmpegPlan, exportPresets } from '../render/render.engine'
 import type { ExportSettings } from '../render/render.types'
 import { createClipFromAsset, moveClip, splitClipAt } from '../timeline/timeline.engine'
 import { createProject, touchProject } from './project.engine'
-import { deleteProject, getProject, listProjects, saveProject, saveProjectVersion } from './project.persistence'
+import { deleteProject, getProject, listProjectAssets, listProjects, saveProject, saveProjectAsset, saveProjectVersion } from './project.persistence'
 import type { EditorAsset, ProjectJson, ProjectRecord, TextStyle, TimelineClip, VideoFormat } from './project.types'
+import { downloadProjectBackup, readProjectBackup } from './project.backup'
 
 type SaveStatus = 'salvo' | 'alterado' | 'salvando' | 'erro'
 type AppView = 'home' | 'new-project' | 'editor' | 'export' | 'packs' | 'settings'
@@ -20,6 +22,9 @@ interface EditorState {
   saveStatus: SaveStatus
   installedPackIds: string[]
   lastError?: string
+  renderProgress: number
+  renderStatus: string
+  isRendering: boolean
   exportSettings: ExportSettings
   goTo: (view: AppView) => void
   refreshProjects: () => Promise<void>
@@ -29,6 +34,8 @@ interface EditorState {
   removeProject: (id: string) => Promise<void>
   saveCurrentProject: (important?: boolean) => Promise<void>
   importFiles: (files: FileList | File[]) => Promise<void>
+  importProjectBackup: (file: File) => Promise<void>
+  exportProjectBackup: () => void
   addTextClip: () => void
   addCaption: () => void
   selectClip: (id?: string) => void
@@ -41,6 +48,7 @@ interface EditorState {
   installPack: (id: string) => void
   removePack: (id: string) => void
   updateExportSettings: (patch: Partial<ExportSettings>) => void
+  renderCurrentProject: () => Promise<void>
   getExportPlan: () => ReturnType<typeof buildFfmpegPlan> | undefined
 }
 
@@ -90,6 +98,20 @@ function mutateProject(project: ProjectJson | undefined, mutator: (project: Proj
   return touchProject(mutator(project))
 }
 
+async function hydrateProjectAssets(project: ProjectJson): Promise<ProjectJson> {
+  const persistedAssets = await listProjectAssets(project.id)
+  if (!persistedAssets.length) return project
+  const assets = project.assets.map((asset) => {
+    const stored = persistedAssets.find((item) => item.asset_id === asset.id)
+    if (!stored) return asset
+    return {
+      ...asset,
+      src: URL.createObjectURL(stored.blob),
+    }
+  })
+  return { ...project, assets }
+}
+
 export const useEditorStore = create<EditorState>((set, get) => ({
   view: 'home',
   projects: [],
@@ -97,6 +119,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   isPlaying: false,
   saveStatus: 'salvo',
   installedPackIds: [],
+  renderProgress: 0,
+  renderStatus: 'Aguardando',
+  isRendering: false,
   exportSettings: defaultExportSettings,
 
   goTo: (view) => set({ view }),
@@ -118,7 +143,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       set({ lastError: 'Projeto nao encontrado.' })
       return
     }
-    set({ currentProject: record.project_json, selectedClipId: undefined, currentTime: 0, view: 'editor', saveStatus: 'salvo' })
+    const hydratedProject = await hydrateProjectAssets(record.project_json)
+    set({ currentProject: hydratedProject, selectedClipId: undefined, currentTime: 0, view: 'editor', saveStatus: 'salvo' })
   },
 
   duplicateProject: async (id) => {
@@ -169,7 +195,19 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       }
       const type = detectAssetType(file)
       if (!type) continue
-      const asset = createAssetFromFile(file, type, URL.createObjectURL(file))
+      const objectUrl = URL.createObjectURL(file)
+      const asset = await createAssetWithMetadata(file, type, objectUrl)
+      await saveProjectAsset({
+        id: crypto.randomUUID(),
+        project_id: project.id,
+        asset_id: asset.id,
+        type,
+        name: file.name,
+        mime_type: file.type,
+        size: file.size,
+        blob: file,
+        created_at: asset.createdAt,
+      })
       importedAssets.push(asset)
       const targetTrack = type === 'audio' ? 'track_audio_1' : type === 'image' ? 'track_overlay_1' : 'track_video_1'
       const start = project.clips.filter((clip) => clip.trackId === targetTrack).reduce((max, clip) => Math.max(max, clip.start + clip.duration), 0)
@@ -182,6 +220,32 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       selectedClipId: newClips[0]?.id,
       saveStatus: 'alterado',
     }))
+  },
+
+  importProjectBackup: async (file) => {
+    try {
+      const project = await readProjectBackup(file)
+      const createdAt = new Date().toISOString()
+      const importedProject: ProjectJson = {
+        ...project,
+        id: crypto.randomUUID(),
+        title: `${project.title} importado`,
+        createdAt,
+        updatedAt: createdAt,
+        assets: project.assets.map((asset) => ({ ...asset, src: '' })),
+      }
+      await saveProject(toProjectRecord(importedProject))
+      set({ currentProject: importedProject, currentTime: 0, selectedClipId: undefined, view: 'editor', saveStatus: 'salvo' })
+      await get().refreshProjects()
+    } catch (error) {
+      set({ lastError: error instanceof Error ? error.message : 'Nao foi possivel importar o projeto.' })
+    }
+  },
+
+  exportProjectBackup: () => {
+    const project = get().currentProject
+    if (!project) return
+    downloadProjectBackup(project)
   },
 
   addTextClip: () => {
@@ -282,6 +346,24 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   installPack: (id) => set((state) => ({ installedPackIds: state.installedPackIds.includes(id) ? state.installedPackIds : [...state.installedPackIds, id] })),
   removePack: (id) => set((state) => ({ installedPackIds: state.installedPackIds.filter((packId) => packId !== id) })),
   updateExportSettings: (patch) => set((state) => ({ exportSettings: { ...state.exportSettings, ...patch } })),
+  renderCurrentProject: async () => {
+    const project = get().currentProject
+    if (!project) return
+    set({ isRendering: true, renderProgress: 0, renderStatus: 'Preparando exportacao', lastError: undefined })
+    try {
+      const result = await renderProjectInBrowser(project, get().exportSettings, (progress, status) => {
+        set({ renderProgress: progress, renderStatus: status })
+      })
+      downloadRenderResult(result)
+      set({ isRendering: false, renderProgress: 100, renderStatus: `Arquivo gerado: ${result.fileName}` })
+    } catch (error) {
+      set({
+        isRendering: false,
+        renderStatus: 'Erro na exportacao',
+        lastError: error instanceof Error ? error.message : 'Nao foi possivel exportar o video.',
+      })
+    }
+  },
   getExportPlan: () => {
     const project = get().currentProject
     if (!project) return undefined
