@@ -1,0 +1,58 @@
+import type { EffectPack } from '../modules/packs/packs.types'
+
+export const mockPacks: EffectPack[] = [
+  {
+    id: 'pack_black_friday_001',
+    name: 'Black Friday Comercial',
+    category: 'Templates',
+    cover: 'gradiente escuro com etiqueta promocional',
+    preview: 'preview.mp4',
+    size: '18 MB',
+    version: '1.0.0',
+    author: 'VideoLab',
+    status: 'disponivel',
+    manifest: {
+      id: 'pack_black_friday_001',
+      name: 'Black Friday Comercial',
+      version: '1.0.0',
+      type: 'template_pack',
+      description: 'Pacote de templates e efeitos para promocoes.',
+      cover: 'cover.jpg',
+      preview: 'preview.mp4',
+      compatibility: { editor_min_version: '1.0.0' },
+      items: [
+        { id: 'template_promo_01', type: 'template', name: 'Promocao Vertical', file: 'template-promo-01.json', preview: 'template-promo-01.mp4' },
+        { id: 'transition_flash_01', type: 'transition', name: 'Flash Rapido', file: 'transition-flash-01.json', preview: 'transition-flash-01.mp4' },
+      ],
+      license: 'free-personal-use',
+      author: 'VideoLab',
+    },
+  },
+  {
+    id: 'pack_reels_moderno_001',
+    name: 'Reels Moderno',
+    category: 'Textos animados',
+    cover: 'cards neon para reels',
+    preview: 'preview.mp4',
+    size: '12 MB',
+    version: '1.0.0',
+    author: 'VideoLab',
+    status: 'disponivel',
+    manifest: {
+      id: 'pack_reels_moderno_001',
+      name: 'Reels Moderno',
+      version: '1.0.0',
+      type: 'effect_pack',
+      description: 'Textos, overlays e transicoes para videos curtos.',
+      cover: 'cover.jpg',
+      preview: 'preview.mp4',
+      compatibility: { editor_min_version: '1.0.0' },
+      items: [
+        { id: 'text_callout_01', type: 'text_preset', name: 'Chamada com contorno', file: 'text-callout-01.json' },
+        { id: 'overlay_light_01', type: 'overlay', name: 'Luz suave', file: 'overlay-light-01.json' },
+      ],
+      license: 'free-personal-use',
+      author: 'VideoLab',
+    },
+  },
+]
