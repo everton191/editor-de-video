@@ -1,0 +1,12 @@
+{
+  "versionCode": 3,
+  "versionName": "1.2",
+  "apkUrl": "https://raw.githubusercontent.com/everton191/editor-de-video/main/apk/VideoLab-Pessoal-debug.apk?v=3",
+  "apkFile": "VideoLab-Pessoal-debug.apk",
+  "publicRepo": "everton191/editor-de-video",
+  "notes": [
+    "Layout mobile ajustado para portrait e landscape.",
+    "Icone do APK atualizado com a identidade visual do VideoLab.",
+    "Atualizacao automatica pelo aplicativo Android."
+  ]
+}
