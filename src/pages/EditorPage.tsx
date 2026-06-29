@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { PreviewCanvas } from '../components/canvas/PreviewCanvas'
 import { LeftSidebar } from '../components/layout/LeftSidebar'
 import { Topbar } from '../components/layout/Topbar'
-import { MediaPanel } from '../components/panels/MediaPanel'
+import { ToolPanel } from '../components/panels/ToolPanel'
 import { PropertiesPanel } from '../components/panels/PropertiesPanel'
 import { Timeline } from '../components/timeline/Timeline'
 import { useEditorStore } from '../modules/project/project.store'
@@ -27,5 +27,5 @@ export function EditorPage() {
     return () => window.clearTimeout(timer)
   }, [saveCurrentProject, saveStatus])
   if (!currentProject) return null
-  return <main className="editor-page"><Topbar /><div className="editor-shell"><LeftSidebar /><MediaPanel /><div className="editor-center"><PreviewCanvas /><Timeline /></div><PropertiesPanel /></div></main>
+  return <main className="editor-page"><Topbar /><div className="editor-shell"><LeftSidebar /><ToolPanel /><div className="editor-center"><PreviewCanvas /><Timeline /></div><PropertiesPanel /></div></main>
 }

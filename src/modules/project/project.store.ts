@@ -13,9 +13,11 @@ import { downloadProjectBackup, readProjectBackup } from './project.backup'
 
 type SaveStatus = 'salvo' | 'alterado' | 'salvando' | 'erro'
 type AppView = 'home' | 'new-project' | 'editor' | 'export' | 'packs' | 'settings'
+export type EditorPanel = 'media' | 'text' | 'templates' | 'effects' | 'transitions' | 'audio' | 'stickers' | 'captions' | 'packs' | 'settings'
 
 interface EditorState {
   view: AppView
+  activePanel: EditorPanel
   projects: ProjectRecord[]
   currentProject?: ProjectJson
   selectedClipId?: string
@@ -30,6 +32,7 @@ interface EditorState {
   isRendering: boolean
   exportSettings: ExportSettings
   goTo: (view: AppView) => void
+  setActivePanel: (panel: EditorPanel) => void
   refreshProjects: () => Promise<void>
   refreshInstalledPacks: () => Promise<void>
   createNewProject: (input: { title: string; format: VideoFormat; width?: number; height?: number; fps?: number }) => Promise<void>
@@ -42,6 +45,9 @@ interface EditorState {
   exportProjectBackup: () => void
   addTextClip: () => void
   addCaption: () => void
+  addStickerClip: (label: string) => void
+  applyEffectToSelected: (effect: { id: string; type: string; name: string; params?: Record<string, number | string | boolean> }) => void
+  addTransitionPreset: (transition: { id: string; name: string; duration: number }) => void
   selectClip: (id?: string) => void
   updateClip: (id: string, patch: Partial<TimelineClip>) => void
   splitSelectedClip: () => void
@@ -118,6 +124,7 @@ async function hydrateProjectAssets(project: ProjectJson): Promise<ProjectJson> 
 
 export const useEditorStore = create<EditorState>((set, get) => ({
   view: 'home',
+  activePanel: 'media',
   projects: [],
   currentTime: 0,
   isPlaying: false,
@@ -130,6 +137,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   exportSettings: defaultExportSettings,
 
   goTo: (view) => set({ view }),
+  setActivePanel: (panel) => set({ activePanel: panel }),
 
   refreshProjects: async () => {
     set({ projects: await listProjects() })
@@ -320,11 +328,114 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     }))
   },
 
+  addStickerClip: (label) => {
+    set((state) => ({
+      currentProject: mutateProject(state.currentProject, (project) => ({
+        ...project,
+        clips: [
+          ...project.clips,
+          {
+            id: crypto.randomUUID(),
+            type: 'text',
+            trackId: 'track_overlay_1',
+            start: state.currentTime,
+            duration: 4,
+            trimStart: 0,
+            trimEnd: 4,
+            position: { x: project.width / 2, y: project.height / 2 },
+            size: { width: project.width * 0.35, height: 160 },
+            scale: 1,
+            rotation: 0,
+            opacity: 1,
+            volume: 1,
+            blendMode: 'normal',
+            effects: [],
+            animations: [],
+            keyframes: [],
+            metadata: { sticker: true },
+            text: label,
+            style: { ...defaultTextStyle, fontSize: 92, color: '#14B8A6' },
+          },
+        ],
+      })),
+      saveStatus: 'alterado',
+    }))
+  },
+
   selectClip: (id) => set({ selectedClipId: id }),
   updateClip: (id, patch) => set((state) => ({
     currentProject: mutateProject(state.currentProject, (project) => ({ ...project, clips: project.clips.map((clip) => (clip.id === id ? { ...clip, ...patch } : clip)) })),
     saveStatus: 'alterado',
   })),
+
+  applyEffectToSelected: (effect) => {
+    const project = get().currentProject
+    const targetClipId = get().selectedClipId || project?.clips.find((clip) => clip.type !== 'audio')?.id
+    if (!targetClipId) {
+      set({ lastError: 'Adicione um clipe de video, imagem ou texto para aplicar o efeito.' })
+      return
+    }
+    set((state) => ({
+      currentProject: mutateProject(state.currentProject, (project) => ({
+        ...project,
+        clips: project.clips.map((clip) => (clip.id === targetClipId ? {
+          ...clip,
+          effects: [
+            ...clip.effects.filter((item) => item.id !== effect.id),
+            { id: effect.id, type: effect.type, name: effect.name, enabled: true, params: effect.params || {} },
+          ],
+        } : clip)),
+      })),
+      selectedClipId: targetClipId,
+      lastError: undefined,
+      saveStatus: 'alterado',
+    }))
+  },
+
+  addTransitionPreset: (transition) => {
+    set((state) => ({
+      currentProject: mutateProject(state.currentProject, (project) => {
+        const visualClips = project.clips
+          .filter((clip) => clip.type !== 'audio')
+          .sort((a, b) => a.start - b.start)
+        if (visualClips.length < 2) {
+          return {
+            ...project,
+            transitions: [
+              ...project.transitions,
+              {
+                id: crypto.randomUUID(),
+                type: transition.id,
+                fromClipId: visualClips[0]?.id || 'clip_atual',
+                toClipId: visualClips[1]?.id || 'proximo_clip',
+                start: Math.max(0, state.currentTime),
+                duration: transition.duration,
+                params: { pendingSecondClip: true },
+              },
+            ],
+          }
+        }
+        const fromClip = visualClips[0]
+        const toClip = visualClips[1]
+        return {
+          ...project,
+          transitions: [
+            ...project.transitions,
+            {
+              id: crypto.randomUUID(),
+              type: transition.id,
+              fromClipId: fromClip.id,
+              toClipId: toClip.id,
+              start: Math.max(fromClip.start, toClip.start - transition.duration),
+              duration: transition.duration,
+              params: {},
+            },
+          ],
+        }
+      }),
+      saveStatus: 'alterado',
+    }))
+  },
 
   splitSelectedClip: () => {
     const { selectedClipId, currentTime } = get()
