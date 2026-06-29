@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { createAssetWithMetadata, detectAssetType, validateMediaFile } from '../assets/assets.engine'
 import { downloadRenderResult, renderProjectInBrowser } from '../render/browser-renderer'
+import { renderProjectWithFfmpegWorker } from '../render/ffmpeg-renderer'
 import { buildFfmpegPlan, exportPresets } from '../render/render.engine'
 import type { ExportSettings } from '../render/render.types'
 import { createClipFromAsset, moveClip, splitClipAt } from '../timeline/timeline.engine'
@@ -497,17 +498,26 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     if (!project) return
     set({ isRendering: true, renderProgress: 0, renderStatus: 'Preparando exportacao', lastError: undefined })
     try {
-      const result = await renderProjectInBrowser(project, get().exportSettings, (progress, status) => {
+      const result = await renderProjectWithFfmpegWorker(project, get().exportSettings, (progress, status) => {
         set({ renderProgress: progress, renderStatus: status })
       })
       downloadRenderResult(result)
       set({ isRendering: false, renderProgress: 100, renderStatus: `Arquivo gerado: ${result.fileName}` })
     } catch (error) {
-      set({
-        isRendering: false,
-        renderStatus: 'Erro na exportacao',
-        lastError: error instanceof Error ? error.message : 'Nao foi possivel exportar o video.',
-      })
+      try {
+        set({ renderStatus: 'FFmpeg indisponivel para este projeto. Usando fallback do navegador.' })
+        const result = await renderProjectInBrowser(project, get().exportSettings, (progress, status) => {
+          set({ renderProgress: progress, renderStatus: status })
+        })
+        downloadRenderResult(result)
+        set({ isRendering: false, renderProgress: 100, renderStatus: `Arquivo gerado: ${result.fileName}` })
+      } catch (fallbackError) {
+        set({
+          isRendering: false,
+          renderStatus: 'Erro na exportacao',
+          lastError: fallbackError instanceof Error ? fallbackError.message : error instanceof Error ? error.message : 'Nao foi possivel exportar o video.',
+        })
+      }
     }
   },
   getExportPlan: () => {

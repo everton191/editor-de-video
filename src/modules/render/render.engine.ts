@@ -1,4 +1,5 @@
 import type { ProjectJson } from '../project/project.types'
+import { getFfmpegSmallProjectBlocker } from './ffmpeg-renderer'
 import type { ExportSettings } from './render.types'
 
 export const exportPresets: Array<{
@@ -14,6 +15,7 @@ export const exportPresets: Array<{
 ]
 
 export function buildFfmpegPlan(project: ProjectJson, settings: ExportSettings) {
+  const blocker = getFfmpegSmallProjectBlocker(project, settings)
   const filters = [`fps=${settings.fps === 'original' ? project.fps : settings.fps}`]
   if (settings.resolution === '2160p') filters.push('scale=3840:2160:flags=lanczos')
   if (settings.resolution === '1440p') filters.push('scale=2560:1440:flags=lanczos')
@@ -23,8 +25,8 @@ export function buildFfmpegPlan(project: ProjectJson, settings: ExportSettings) 
   if (settings.denoise) filters.push('hqdn3d=1.5:1.5:6:6')
   if (settings.improveContrast || settings.improveSaturation) filters.push('eq=contrast=1.05:saturation=1.08')
   return {
-    mode: 'browser-preview',
-    note: 'Plano preparado para FFmpeg. A exportacao completa sera evoluida para worker/FFmpeg local.',
+    mode: blocker ? 'fallback-browser-recorder' : 'ffmpeg-wasm-worker',
+    note: blocker || 'Renderizacao real via FFmpeg.wasm em worker para projeto pequeno.',
     inputCount: project.assets.length,
     filters,
   }

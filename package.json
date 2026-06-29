@@ -11,6 +11,9 @@
   },
   "dependencies": {
     "@capacitor/core": "^8.4.1",
+    "@ffmpeg/core": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "@vite-pwa/assets-generator": "^1.0.2",
     "dexie": "^4.4.4",
     "jszip": "^3.10.1",

@@ -7,6 +7,8 @@ export interface BrowserRenderResult {
   mimeType: string
 }
 
+export type BrowserMediaCache = Map<string, HTMLImageElement | HTMLVideoElement | undefined>
+
 const resolutionMap = {
   '720p': { landscape: [1280, 720], portrait: [720, 1280] },
   '1080p': { landscape: [1920, 1080], portrait: [1080, 1920] },
@@ -67,7 +69,7 @@ export function downloadRenderResult(result: BrowserRenderResult) {
   URL.revokeObjectURL(url)
 }
 
-function resolveOutputSize(project: ProjectJson, settings: ExportSettings) {
+export function resolveOutputSize(project: ProjectJson, settings: ExportSettings) {
   if (settings.resolution === 'original' || settings.resolution === 'custom') return { width: project.width, height: project.height }
   const orientation = project.height > project.width ? 'portrait' : 'landscape'
   const size = resolutionMap[settings.resolution][orientation]
@@ -79,7 +81,7 @@ function pickRecorderMimeType() {
   return candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate)) || 'video/webm'
 }
 
-async function preloadMedia(project: ProjectJson) {
+export async function preloadMedia(project: ProjectJson): Promise<BrowserMediaCache> {
   const entries = await Promise.all(
     project.assets.map(async (asset) => {
       if (asset.type === 'image') return [asset.id, await loadImage(asset.src)] as const
@@ -111,10 +113,10 @@ function loadVideo(src: string): Promise<HTMLVideoElement> {
   })
 }
 
-function drawFrame(
+export function drawFrame(
   context: CanvasRenderingContext2D,
   project: ProjectJson,
-  mediaCache: Map<string, HTMLImageElement | HTMLVideoElement | undefined>,
+  mediaCache: BrowserMediaCache,
   time: number,
   width: number,
   height: number,
