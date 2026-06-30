@@ -1,12 +1,13 @@
 {
-  "versionCode": 5,
-  "versionName": "1.4",
-  "apkUrl": "https://raw.githubusercontent.com/everton191/editor-de-video/main/apk/VideoLab-Pessoal-debug.apk?v=5",
+  "versionCode": 6,
+  "versionName": "1.5",
+  "apkUrl": "https://raw.githubusercontent.com/everton191/editor-de-video/main/apk/VideoLab-Pessoal-debug.apk?v=6",
   "apkFile": "VideoLab-Pessoal-debug.apk",
   "publicRepo": "everton191/editor-de-video",
   "notes": [
-    "Biblioteca de pacotes via GitHub com instalacao offline.",
-    "Pacote de fontes livres e estilos variados adicionado ao catalogo.",
-    "Layout horizontal do editor ajustado para proporcao e toque."
+    "Midias importadas agora entram centralizadas e visiveis no reprodutor.",
+    "Videos sincronizam play/pause e tempo atual no preview.",
+    "Presets de texto, templates e stickers atualizam a selecao para evitar camadas amontoadas.",
+    "Reprodutor mobile maior, com proporcao correta e controles de largura/altura dos itens."
   ]
 }

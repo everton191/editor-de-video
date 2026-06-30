@@ -17,6 +17,15 @@ import { downloadProjectBackup, readProjectBackup } from './project.backup'
 type SaveStatus = 'salvo' | 'alterado' | 'salvando' | 'erro'
 type AppView = 'home' | 'new-project' | 'editor' | 'export' | 'packs' | 'settings'
 export type EditorPanel = 'media' | 'text' | 'templates' | 'effects' | 'transitions' | 'audio' | 'stickers' | 'captions' | 'packs' | 'settings'
+type TextClipPreset = {
+  text?: string
+  trackId?: string
+  duration?: number
+  position?: { xRatio: number; yRatio: number }
+  size?: { widthRatio: number; height: number }
+  style?: Partial<TextStyle>
+  metadata?: Record<string, unknown>
+}
 
 interface EditorState {
   view: AppView
@@ -49,7 +58,7 @@ interface EditorState {
   importFiles: (files: FileList | File[]) => Promise<void>
   importProjectBackup: (file: File) => Promise<void>
   exportProjectBackup: () => void
-  addTextClip: () => void
+  addTextClip: (preset?: TextClipPreset) => void
   addCaption: () => void
   addStickerClip: (label: string) => void
   applyEffectToSelected: (effect: { id: string; type: string; name: string; params?: Record<string, number | string | boolean> }) => void
@@ -118,6 +127,38 @@ function toProjectRecord(project: ProjectJson): ProjectRecord {
 function mutateProject(project: ProjectJson | undefined, mutator: (project: ProjectJson) => ProjectJson) {
   if (!project) return project
   return touchProject(mutator(project))
+}
+
+function createTextClip(project: ProjectJson, currentTime: number, preset: TextClipPreset = {}): TimelineClip {
+  const duration = preset.duration || 5
+  return {
+    id: crypto.randomUUID(),
+    type: 'text',
+    trackId: preset.trackId || 'track_text_1',
+    start: currentTime,
+    duration,
+    trimStart: 0,
+    trimEnd: duration,
+    position: {
+      x: project.width * (preset.position?.xRatio ?? 0.5),
+      y: project.height * (preset.position?.yRatio ?? 0.5),
+    },
+    size: {
+      width: project.width * (preset.size?.widthRatio ?? 0.75),
+      height: preset.size?.height ?? 160,
+    },
+    scale: 1,
+    rotation: 0,
+    opacity: 1,
+    volume: 1,
+    blendMode: 'normal',
+    effects: [],
+    animations: [],
+    keyframes: [],
+    metadata: preset.metadata || {},
+    text: preset.text || 'Texto do video',
+    style: { ...defaultTextStyle, ...preset.style },
+  }
 }
 
 function formatSrtTime(seconds: number) {
@@ -297,14 +338,16 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       importedAssets.push(asset)
       const targetTrack = type === 'audio' ? 'track_audio_1' : type === 'image' ? 'track_overlay_1' : 'track_video_1'
       const start = project.clips.filter((clip) => clip.trackId === targetTrack).reduce((max, clip) => Math.max(max, clip.start + clip.duration), 0)
-      newClips.push(createClipFromAsset(asset, targetTrack, start))
+      newClips.push(createClipFromAsset(asset, targetTrack, start, { width: project.width, height: project.height }))
     }
 
     if (!importedAssets.length) return
     set((state) => ({
       currentProject: mutateProject(state.currentProject, (current) => ({ ...current, assets: [...current.assets, ...importedAssets], clips: [...current.clips, ...newClips] })),
       selectedClipId: newClips[0]?.id,
+      currentTime: newClips[0]?.start || state.currentTime,
       saveStatus: 'alterado',
+      lastError: undefined,
     }))
   },
 
@@ -334,37 +377,35 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     downloadProjectBackup(project)
   },
 
-  addTextClip: () => {
+  addTextClip: (preset) => {
+    let selectedId: string | undefined
     set((state) => ({
-      currentProject: mutateProject(state.currentProject, (project) => ({
-        ...project,
-        clips: [
-          ...project.clips,
-          {
-            id: crypto.randomUUID(),
-            type: 'text',
-            trackId: 'track_text_1',
-            start: state.currentTime,
-            duration: 5,
-            trimStart: 0,
-            trimEnd: 5,
-            position: { x: project.width / 2, y: project.height / 2 },
-            size: { width: project.width * 0.75, height: 160 },
-            scale: 1,
-            rotation: 0,
-            opacity: 1,
-            volume: 1,
-            blendMode: 'normal',
-            effects: [],
-            animations: [],
-            keyframes: [],
-            metadata: {},
-            text: 'Texto do video',
-            style: defaultTextStyle,
-          },
-        ],
-      })),
+      currentProject: mutateProject(state.currentProject, (project) => {
+        const selectedClip = state.selectedClipId ? project.clips.find((clip) => clip.id === state.selectedClipId) : undefined
+        if (preset && selectedClip?.type === 'text') {
+          selectedId = selectedClip.id
+          return {
+            ...project,
+            clips: project.clips.map((clip) => (clip.id === selectedClip.id ? {
+              ...clip,
+              text: preset.text || clip.text,
+              trackId: preset.trackId || clip.trackId,
+              duration: preset.duration || clip.duration,
+              trimEnd: preset.duration || clip.trimEnd,
+              size: preset.size ? { width: project.width * preset.size.widthRatio, height: preset.size.height } : clip.size,
+              position: preset.position ? { x: project.width * preset.position.xRatio, y: project.height * preset.position.yRatio } : clip.position,
+              metadata: { ...clip.metadata, ...(preset.metadata || {}) },
+              style: { ...(clip.style || defaultTextStyle), ...(preset.style || {}) },
+            } : clip)),
+          }
+        }
+        const nextClip = createTextClip(project, state.currentTime, preset)
+        selectedId = nextClip.id
+        return { ...project, clips: [...project.clips, nextClip] }
+      }),
+      selectedClipId: selectedId || state.selectedClipId,
       saveStatus: 'alterado',
+      lastError: undefined,
     }))
   },
 
@@ -390,36 +431,35 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
 
   addStickerClip: (label) => {
+    let selectedId: string | undefined
     set((state) => ({
-      currentProject: mutateProject(state.currentProject, (project) => ({
-        ...project,
-        clips: [
-          ...project.clips,
-          {
-            id: crypto.randomUUID(),
-            type: 'text',
-            trackId: 'track_overlay_1',
-            start: state.currentTime,
-            duration: 4,
-            trimStart: 0,
-            trimEnd: 4,
-            position: { x: project.width / 2, y: project.height / 2 },
-            size: { width: project.width * 0.35, height: 160 },
-            scale: 1,
-            rotation: 0,
-            opacity: 1,
-            volume: 1,
-            blendMode: 'normal',
-            effects: [],
-            animations: [],
-            keyframes: [],
-            metadata: { sticker: true },
-            text: label,
-            style: { ...defaultTextStyle, fontSize: 92, color: '#14B8A6' },
-          },
-        ],
-      })),
+      currentProject: mutateProject(state.currentProject, (project) => {
+        const selectedClip = state.selectedClipId ? project.clips.find((clip) => clip.id === state.selectedClipId) : undefined
+        if (selectedClip?.type === 'text' && selectedClip.metadata.sticker) {
+          selectedId = selectedClip.id
+          return {
+            ...project,
+            clips: project.clips.map((clip) => (clip.id === selectedClip.id ? {
+              ...clip,
+              text: label,
+              style: { ...(clip.style || defaultTextStyle), fontSize: 92, color: '#14B8A6' },
+            } : clip)),
+          }
+        }
+        const nextClip = createTextClip(project, state.currentTime, {
+          text: label,
+          trackId: 'track_overlay_1',
+          duration: 4,
+          size: { widthRatio: 0.35, height: 160 },
+          style: { fontSize: 92, color: '#14B8A6' },
+          metadata: { sticker: true },
+        })
+        selectedId = nextClip.id
+        return { ...project, clips: [...project.clips, nextClip] }
+      }),
+      selectedClipId: selectedId || state.selectedClipId,
       saveStatus: 'alterado',
+      lastError: undefined,
     }))
   },
 
@@ -463,7 +503,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           return {
             ...project,
             transitions: [
-              ...project.transitions,
+              ...project.transitions.filter((item) => !(item.type === transition.id && Math.abs(item.start - Math.max(0, state.currentTime)) < 0.05)),
               {
                 id: crypto.randomUUID(),
                 type: transition.id,
@@ -481,7 +521,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         return {
           ...project,
           transitions: [
-            ...project.transitions,
+            ...project.transitions.filter((item) => !(item.type === transition.id && item.fromClipId === fromClip.id && item.toClipId === toClip.id)),
             {
               id: crypto.randomUUID(),
               type: transition.id,

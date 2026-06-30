@@ -14,7 +14,7 @@ export function MediaPanel() {
       <input accept="application/json,.json,.videolab.json" hidden ref={backupRef} type="file" onChange={(event) => event.target.files?.[0] && void importProjectBackup(event.target.files[0])} />
       <Button variant="primary" icon={<FilePlus2 size={18} />} onClick={() => inputRef.current?.click()}>Importar midia</Button>
       <Button variant="secondary" icon={<FileJson size={18} />} onClick={() => backupRef.current?.click()}>Importar projeto</Button>
-      <Button variant="secondary" icon={<MessageSquareText size={18} />} onClick={addTextClip}>Adicionar texto</Button>
+      <Button variant="secondary" icon={<MessageSquareText size={18} />} onClick={() => addTextClip()}>Adicionar texto</Button>
       <Button variant="secondary" icon={<Subtitles size={18} />} onClick={addCaption}>Legenda manual</Button>
       {lastError ? <p className="panel-error">{lastError}</p> : null}
       <div className="asset-list">

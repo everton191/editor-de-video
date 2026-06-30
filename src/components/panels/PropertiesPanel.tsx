@@ -14,6 +14,25 @@ export function PropertiesPanel() {
         <Field label="Posicao X"><TextInput type="number" value={Math.round(clip.position.x)} onChange={(event) => updateClip(clip.id, { position: { ...clip.position, x: Number(event.target.value) } })} /></Field>
         <Field label="Posicao Y"><TextInput type="number" value={Math.round(clip.position.y)} onChange={(event) => updateClip(clip.id, { position: { ...clip.position, y: Number(event.target.value) } })} /></Field>
       </div>
+      <div className="property-grid">
+        <Field label="Largura"><TextInput type="number" min="1" value={Math.round(clip.size.width)} onChange={(event) => updateClip(clip.id, { size: { ...clip.size, width: Number(event.target.value) } })} /></Field>
+        <Field label="Altura"><TextInput type="number" min="1" value={Math.round(clip.size.height)} onChange={(event) => updateClip(clip.id, { size: { ...clip.size, height: Number(event.target.value) } })} /></Field>
+      </div>
+      <Field label="Encaixe rapido">
+        <SelectInput value="" onChange={(event) => {
+          const mode = event.target.value
+          if (!mode) return
+          if (mode === 'center') updateClip(clip.id, { position: { x: currentProject.width / 2, y: currentProject.height / 2 } })
+          if (mode === 'fit-width') updateClip(clip.id, { position: { x: currentProject.width / 2, y: currentProject.height / 2 }, size: { ...clip.size, width: currentProject.width } })
+          if (mode === 'fit-height') updateClip(clip.id, { position: { x: currentProject.width / 2, y: currentProject.height / 2 }, size: { ...clip.size, height: currentProject.height } })
+          event.currentTarget.value = ''
+        }}>
+          <option value="">Escolher</option>
+          <option value="center">Centralizar</option>
+          <option value="fit-width">Largura cheia</option>
+          <option value="fit-height">Altura cheia</option>
+        </SelectInput>
+      </Field>
       <Field label="Escala"><input className="slider" max="3" min="0.1" step="0.05" type="range" value={clip.scale} onChange={(event) => updateClip(clip.id, { scale: Number(event.target.value) })} /></Field>
       <Field label="Rotacao"><input className="slider" max="180" min="-180" step="1" type="range" value={clip.rotation} onChange={(event) => updateClip(clip.id, { rotation: Number(event.target.value) })} /></Field>
       <Field label="Opacidade"><input className="slider" max="1" min="0" step="0.01" type="range" value={clip.opacity} onChange={(event) => updateClip(clip.id, { opacity: Number(event.target.value) })} /></Field>

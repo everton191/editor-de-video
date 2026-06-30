@@ -4,17 +4,33 @@ import { Button } from '../ui/Button'
 import { SelectInput } from '../ui/Field'
 import { useEditorStore } from '../../modules/project/project.store'
 
-const textPresets = ['Titulo cinematico', 'Legenda limpa', 'Credito final', 'Texto glitch', 'Lower third']
-const templatePresets = ['Intro cinematico', 'Split screen', 'Montagem rapida', 'Vlog vertical', 'Mood board']
-const effectPresets = [
+type EffectPreset = { id: string; type: string; name: string; params: Record<string, number | string | boolean> }
+
+const textPresets = [
+  { name: 'Titulo cinematico', text: 'TITULO PRINCIPAL', position: { xRatio: 0.5, yRatio: 0.36 }, style: { fontSize: 92, fontWeight: '800', color: '#F8FAFC' } },
+  { name: 'Legenda limpa', text: 'Legenda limpa', position: { xRatio: 0.5, yRatio: 0.78 }, style: { fontSize: 54, fontWeight: '700', color: '#FFFFFF', backgroundColor: 'rgba(2,6,23,.58)' } },
+  { name: 'Credito final', text: 'Credito final', position: { xRatio: 0.5, yRatio: 0.5 }, style: { fontSize: 58, fontWeight: '600', color: '#CBD5E1' } },
+  { name: 'Texto glitch', text: 'GLITCH', position: { xRatio: 0.5, yRatio: 0.42 }, style: { fontSize: 86, fontWeight: '900', color: '#22D3EE', strokeWidth: 2, strokeColor: '#EF4444' } },
+  { name: 'Lower third', text: 'Nome / detalhe', position: { xRatio: 0.5, yRatio: 0.72 }, size: { widthRatio: 0.82, height: 140 }, style: { fontSize: 48, fontWeight: '800', color: '#14B8A6', backgroundColor: 'rgba(15,23,42,.72)', align: 'left' as const } },
+]
+const templatePresets = [
+  { name: 'Intro cinematico', text: 'NOVA HISTORIA', position: { xRatio: 0.5, yRatio: 0.38 }, style: { fontSize: 86, fontWeight: '900', color: '#F8FAFC' }, metadata: { template: 'intro-cinematico' } },
+  { name: 'Split screen', text: 'ANTES | DEPOIS', position: { xRatio: 0.5, yRatio: 0.5 }, style: { fontSize: 64, fontWeight: '900', color: '#22D3EE' }, metadata: { template: 'split-screen' } },
+  { name: 'Montagem rapida', text: 'CORTE RAPIDO', position: { xRatio: 0.5, yRatio: 0.46 }, style: { fontSize: 76, fontWeight: '900', color: '#F59E0B' }, metadata: { template: 'montagem-rapida' } },
+  { name: 'Vlog vertical', text: 'DIA 01', position: { xRatio: 0.5, yRatio: 0.2 }, style: { fontSize: 58, fontWeight: '800', color: '#FFFFFF', backgroundColor: 'rgba(20,184,166,.34)' }, metadata: { template: 'vlog-vertical' } },
+  { name: 'Mood board', text: 'MOOD BOARD', position: { xRatio: 0.5, yRatio: 0.82 }, style: { fontSize: 54, fontWeight: '700', color: '#E0F2FE' }, metadata: { template: 'mood-board' } },
+]
+const effectPresets: EffectPreset[] = [
   { id: 'brightness', type: 'brightness', name: 'Brilho', params: { amount: 1.1 } },
-  { id: 'contrast', type: 'contrast', name: 'Contraste', params: { amount: 1.08 } },
-  { id: 'saturation', type: 'saturation', name: 'Saturacao', params: { amount: 1.12 } },
+  { id: 'contrast', type: 'contrast', name: 'Contraste', params: { amount: 1.14 } },
+  { id: 'saturation', type: 'saturation', name: 'Saturacao', params: { amount: 1.22 } },
   { id: 'bw', type: 'grayscale', name: 'Preto e branco', params: { amount: 1 } },
   { id: 'vignette', type: 'vignette', name: 'Vinheta', params: { amount: 0.35 } },
-  { id: 'cinema', type: 'contrast', name: 'Cinema suave', params: { amount: 1.16 } },
-  { id: 'dream', type: 'brightness', name: 'Sonho claro', params: { amount: 1.18 } },
-  { id: 'neon', type: 'saturation', name: 'Neon vivo', params: { amount: 1.35 } },
+  { id: 'cinema', type: 'cinema', name: 'Cinema suave', params: { contrast: 1.18, saturation: 0.9, brightness: 0.96 } },
+  { id: 'dream', type: 'dream', name: 'Sonho claro', params: { brightness: 1.16, saturation: 1.08, blur: 0.4 } },
+  { id: 'neon', type: 'neon', name: 'Neon vivo', params: { saturation: 1.55, contrast: 1.16, glow: 1 } },
+  { id: 'warm-film', type: 'warm-film', name: 'Filme quente', params: { sepia: 0.22, saturation: 1.12, brightness: 1.03 } },
+  { id: 'cold-night', type: 'cold-night', name: 'Noite fria', params: { hue: 190, contrast: 1.12, brightness: 0.9 } },
 ]
 const transitionPresets = [
   { id: 'fade', name: 'Fade', duration: 0.5 },
@@ -69,14 +85,14 @@ export function ToolPanel() {
       {activePanel === 'text' ? (
         <>
           <PanelHeader title="Texto" description="Adicione textos manuais editaveis no canvas." />
-          <Button variant="primary" icon={<MessageSquareText size={18} />} onClick={addTextClip}>Adicionar texto</Button>
-          <div className="tool-list">{textPresets.map((preset) => <button key={preset} type="button" onClick={addTextClip}>{preset}</button>)}</div>
+          <Button variant="primary" icon={<MessageSquareText size={18} />} onClick={() => addTextClip()}>Adicionar texto</Button>
+          <div className="tool-list">{textPresets.map((preset) => <button key={preset.name} type="button" onClick={() => addTextClip(preset)}>{preset.name}<small>Aplica no texto selecionado</small></button>)}</div>
         </>
       ) : null}
       {activePanel === 'templates' ? (
         <>
           <PanelHeader title="Templates" description="Modelos locais para iniciar composicoes rapidamente." />
-          <div className="tool-list">{templatePresets.map((preset) => <button key={preset} type="button" onClick={addTextClip}>{preset}<small>Cria base editavel no projeto atual</small></button>)}</div>
+          <div className="tool-list">{templatePresets.map((preset) => <button key={preset.name} type="button" onClick={() => addTextClip(preset)}>{preset.name}<small>Atualiza o template selecionado</small></button>)}</div>
         </>
       ) : null}
       {activePanel === 'effects' ? (
